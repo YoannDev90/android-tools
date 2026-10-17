@@ -86,7 +86,7 @@
       },
       "cli": {
         "type": "binary",
-        "subcommands": false,
+        "has_subcommands": false,
         "flags": [
           { "name": "--package", "short": "-p", "type": "string", "default": "dev.yoanndev90.statusbarhider", "description": "App package name (release, then .debug is auto-tried)." },
           { "name": "--serial", "short": "-s", "type": "string", "description": "adb serial (auto-picked when a single device is connected)." },
@@ -151,7 +151,7 @@
       },
       "cli": {
         "type": "binary",
-        "subcommands": true,
+        "has_subcommands": true,
         "global_flags": [
           { "name": "--serial", "short": "-s", "type": "string", "description": "adb serial (auto-picked when a single device is connected)." }
         ],
