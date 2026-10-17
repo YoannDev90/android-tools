@@ -1,0 +1,20 @@
+[package]
+name = "logstream"
+version = "0.1.0"
+edition = "2021"
+description = "Live Android log streamer - logcat, but actually nice"
+license = "MIT"
+
+[metadata]
+long_description = "Streams `adb logcat` (threadtime, main/system/crash buffers) filtered to one app package, with a ratatui TUI (search, level/tag filters, pid tracking, crash and restart banners) plus plain and JSONL output modes for piping."
+readme = "logstream/README.md"
+license_file = "logstream/LICENSE"
+manifest = "logstream/Cargo.toml"
+entrypoint = "logstream/src/main.rs"
+category = "logging"
+tags = ["android", "logcat", "adb", "tui", "debugging", "streaming", "jsonl"]
+requires = { adb = true, installed_package = true }
+features = ["App-pid filtering with crash history kept across restarts", "Auto package resolution (tries <pkg> then <pkg>.debug)", "Crash / start / restart / died banners (AndroidRuntime FATAL EXCEPTION detection)", "Stack-trace continuation lines merged into the record", "Live TUI with regex search, level and tag filters", "JSONL and plain modes for scripts, optional file mirror"]
+dependencies = { anyhow = "1", clap = "4", crossterm = "0.29", ratatui = "0.30", regex = "1", serde = "1", serde_json = "1", unicode-width = "0.2" }
+tests = true
+source = { files = ["main.rs", "adb.rs", "buffer.rs", "parse.rs", "render.rs", "tui.rs"] }

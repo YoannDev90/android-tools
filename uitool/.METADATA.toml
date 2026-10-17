@@ -1,0 +1,20 @@
+[package]
+name = "uitool"
+version = "0.1.0"
+edition = "2021"
+description = "Practical Android UI driver — dump, find, tap, shot over adb"
+license = "MIT"
+
+[metadata]
+long_description = "Drives a device UI from the command line: dumps the uiautomator hierarchy as labeled lines, finds/waits for nodes by text or content-desc, taps by label or coordinates, swipes, takes cropped/scaled screenshots, launches activities, sends keys and text."
+readme = "uitool/README.md"
+license_file = "uitool/LICENSE"
+manifest = "uitool/Cargo.toml"
+entrypoint = "uitool/src/main.rs"
+category = "automation"
+tags = ["android", "adb", "uiautomator", "automation", "screenshot", "testing", "cli"]
+requires = { adb = true, screen_on = "uiautomator dump fails on a locked/off screen" }
+features = ["Label-based interaction: tap/find/wait use text or content-desc, no coordinates needed", "Clickable nodes preferred as tap target, bounds center computed automatically", "uiautomator dump with hard timeout (no hangs) and screen-off detection", "Screenshot pipeline: crop, nearest upscale, max-dim resize, JPEG quality", "Serial auto-pick when exactly one device is connected"]
+dependencies = { anyhow = "1", clap = "4", image = "0.25" }
+tests = true
+source = { files = ["main.rs", "adb.rs", "ui.rs", "shot.rs"] }

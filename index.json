@@ -1,7 +1,7 @@
 {
   "name": "android-tools",
   "version": "0.1.0",
-  "description": "Two adb-based CLI tools for Android development: a live logcat streamer with a TUI and a UI automation driver.",
+  "description": "adb-based tools for Android development, written in Rust.",
   "license": "MIT",
   "language": "rust",
   "edition": "2021",
@@ -15,7 +15,7 @@
     "license_file": "LICENSE"
   },
   "requirements": {
-    "rust": "stable (verified with rustc 1.99.0)",
+    "rust": "stable (verified with rustc 1.99)",
     "adb": "Android SDK platform-tools in PATH",
     "device": "Connected Android device or emulator with USB debugging authorized"
   },
@@ -35,18 +35,19 @@
       "language": "rust",
       "license": "MIT",
       "description": "Shared adb helpers for the android-tools workspace",
-      "long_description": "Library crate: device picking and shell/exec-out wrappers with timeouts. No domain logic — the tools own that.",
+      "long_description": "Library crate with device picking, shell/exec-out wrappers with timeouts, and pure helpers. Domain logic stays in the tools that own it.",
       "readme": "adbkit/README.md",
       "license_file": "adbkit/LICENSE",
       "manifest": "adbkit/Cargo.toml",
       "entrypoint": "adbkit/src/lib.rs",
       "category": "library",
-      "tags": ["adb", "shared", "plumbing"],
+      "tags": [
+        "adb",
+        "shared",
+        "plumbing"
+      ],
       "requires": {
         "adb": "Android SDK platform-tools in PATH"
-      },
-      "cli": {
-        "type": "library"
       },
       "features": [
         "Serial auto-pick when a single device is connected",
@@ -59,7 +60,9 @@
       },
       "tests": true,
       "source": {
-        "files": ["lib.rs"],
+        "files": [
+          "lib.rs"
+        ],
         "loc": 199
       }
     },
@@ -67,7 +70,6 @@
       "id": "logstream",
       "name": "logstream",
       "path": "logstream",
-      "binary": "logstream",
       "version": "0.1.0",
       "edition": "2021",
       "language": "rust",
@@ -79,30 +81,18 @@
       "manifest": "logstream/Cargo.toml",
       "entrypoint": "logstream/src/main.rs",
       "category": "logging",
-      "tags": ["android", "logcat", "adb", "tui", "debugging", "streaming", "jsonl"],
+      "tags": [
+        "android",
+        "logcat",
+        "adb",
+        "tui",
+        "debugging",
+        "streaming",
+        "jsonl"
+      ],
       "requires": {
         "adb": true,
         "installed_package": true
-      },
-      "cli": {
-        "type": "binary",
-        "has_subcommands": false,
-        "flags": [
-          { "name": "--package", "short": "-p", "type": "string", "default": "dev.yoanndev90.statusbarhider", "description": "App package name (release, then .debug is auto-tried)." },
-          { "name": "--serial", "short": "-s", "type": "string", "description": "adb serial (auto-picked when a single device is connected)." },
-          { "name": "--all", "type": "bool", "description": "Show every process (disable app-pid filtering)." },
-          { "name": "--level", "short": "-l", "type": "string", "default": "v", "description": "Minimum level to display (v/d/i/w/e/f)." },
-          { "name": "--tag", "short": "-t", "type": "string[]", "description": "Keep only tags starting with this prefix (repeatable)." },
-          { "name": "--skip", "type": "string[]", "description": "Drop tags starting with this prefix (repeatable)." },
-          { "name": "--search", "short": "-q", "type": "string", "default": "", "description": "Initial search query (also filterable live with / in the TUI)." },
-          { "name": "--buffer", "short": "-b", "type": "usize", "default": 10000, "description": "Ring-buffer capacity (lines)." },
-          { "name": "--clear", "type": "bool", "description": "Clear logcat buffer before streaming." },
-          { "name": "--json", "type": "bool", "description": "Write JSON lines (one object per record) instead of the TUI." },
-          { "name": "--plain", "type": "bool", "description": "Plain colored output (no TUI). Auto-selected when stdout is not a TTY." },
-          { "name": "--out", "short": "-o", "type": "path", "description": "Mirror output to this file (works with any mode)." }
-        ],
-        "modes": ["tui", "plain", "jsonl"],
-        "tui_keys": ["q / Ctrl+C quit", "/ search", "n / N next/prev match", "+ allow tag", "- skip tag", ": set level", "c clear buffer", "Ctrl+A toggle app/all pids", "PgUp/PgDn/Home/End/arrows navigate", "mouse scroll"]
       },
       "features": [
         "App-pid filtering with crash history kept across restarts",
@@ -124,15 +114,21 @@
       },
       "tests": true,
       "source": {
-        "files": ["main.rs", "adb.rs", "buffer.rs", "parse.rs", "render.rs", "tui.rs"],
-        "loc": 2416
+        "files": [
+          "main.rs",
+          "adb.rs",
+          "buffer.rs",
+          "parse.rs",
+          "render.rs",
+          "tui.rs"
+        ],
+        "loc": 2347
       }
     },
     {
       "id": "uitool",
       "name": "uitool",
       "path": "uitool",
-      "binary": "uitool",
       "version": "0.1.0",
       "edition": "2021",
       "language": "rust",
@@ -144,31 +140,18 @@
       "manifest": "uitool/Cargo.toml",
       "entrypoint": "uitool/src/main.rs",
       "category": "automation",
-      "tags": ["android", "adb", "uiautomator", "automation", "screenshot", "testing", "cli"],
+      "tags": [
+        "android",
+        "adb",
+        "uiautomator",
+        "automation",
+        "screenshot",
+        "testing",
+        "cli"
+      ],
       "requires": {
         "adb": true,
         "screen_on": "uiautomator dump fails on a locked/off screen"
-      },
-      "cli": {
-        "type": "binary",
-        "has_subcommands": true,
-        "global_flags": [
-          { "name": "--serial", "short": "-s", "type": "string", "description": "adb serial (auto-picked when a single device is connected)." }
-        ],
-        "subcommands": [
-          { "name": "wake", "args": [], "description": "Wake + dismiss keyguard + collapse status bar." },
-          { "name": "dump", "args": [], "description": "Dump UI hierarchy: one line per labeled node (`text [bounds]`)." },
-          { "name": "find", "args": ["<query>"], "flags": [{ "name": "--clickable", "type": "bool", "description": "Only clickable nodes." }], "description": "Find nodes matching text/content-desc (case-insensitive substring). Exit 1 if none." },
-          { "name": "wait", "args": ["<query>"], "flags": [{ "name": "--timeout", "short": "-t", "type": "secs", "default": 10, "description": "Timeout seconds." }], "description": "Wait until a node matches (poll dump)." },
-          { "name": "tap", "args": ["<x> <y> | <label>"], "flags": [{ "name": "--duration", "short": "-d", "type": "ms", "default": 0, "description": "Milliseconds to hold the press (0 = quick input tap)." }], "description": "Tap by coordinates or by label." },
-          { "name": "long-press", "args": ["<query>"], "flags": [{ "name": "--duration", "short": "-d", "type": "ms", "default": 600, "description": "Press duration." }], "description": "Long-press a label (zero-length swipe)." },
-          { "name": "swipe", "args": ["<x1> <y1> <x2> <y2> [ms]"], "flags": [], "description": "Swipe between coordinates (default 300 ms)." },
-          { "name": "shot", "args": [], "flags": [{ "name": "--out", "short": "-o", "type": "path", "description": "Output path (.jpg/.png). Default /tmp/uitool-<epoch>.jpg" }, { "name": "--crop", "type": "x1,y1,x2,y2", "description": "Crop before save." }, { "name": "--scale", "type": "f32", "default": 1.0, "description": "Nearest upscale factor after crop." }, { "name": "--max-dim", "type": "u32", "default": 0, "description": "Cap longest side (0 = keep full)." }, { "name": "--quality", "type": "u8", "default": 75, "description": "JPEG quality 1-100." }, { "name": "--wake", "type": "bool", "description": "Wake before capture." }], "description": "Screenshot → jpg/png on disk (prints path)." },
-          { "name": "launch", "args": ["<package> | <package/.Activity>"], "flags": [], "description": "Start an activity; a bare package resolves its launcher activity (cmd package resolve-activity)." },
-          { "name": "key", "args": ["<KEYCODE_HOME | numeric>"], "flags": [], "description": "Send key event." },
-          { "name": "input", "args": ["<text>"], "flags": [], "description": "Type text (spaces → %s)." },
-          { "name": "stop", "args": ["<package>"], "flags": [], "description": "Force-stop a package." }
-        ]
       },
       "features": [
         "Label-based interaction: tap/find/wait use text or content-desc, no coordinates needed",
@@ -184,8 +167,13 @@
       },
       "tests": true,
       "source": {
-        "files": ["main.rs", "adb.rs", "ui.rs", "shot.rs"],
-        "loc": 692
+        "files": [
+          "main.rs",
+          "adb.rs",
+          "ui.rs",
+          "shot.rs"
+        ],
+        "loc": 726
       }
     }
   ]

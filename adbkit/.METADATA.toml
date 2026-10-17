@@ -1,0 +1,20 @@
+[package]
+name = "adbkit"
+version = "0.1.0"
+edition = "2021"
+description = "Shared adb helpers for the android-tools workspace"
+license = "MIT"
+
+[metadata]
+long_description = "Library crate with device picking, shell/exec-out wrappers with timeouts, and pure helpers. Domain logic stays in the tools that own it."
+readme = "adbkit/README.md"
+license_file = "adbkit/LICENSE"
+manifest = "adbkit/Cargo.toml"
+entrypoint = "adbkit/src/lib.rs"
+category = "library"
+tags = ["adb", "shared", "plumbing"]
+requires = { adb = "Android SDK platform-tools in PATH" }
+features = ["Serial auto-pick when a single device is connected", "shell_opt for commands whose failure is a normal outcome", "shell_timeout with hard kill (uiautomator dump hangs)", "exec_out for raw stdout (screencap)"]
+dependencies = { anyhow = "1" }
+tests = true
+source = { files = ["lib.rs"] }
