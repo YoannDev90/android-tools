@@ -1,0 +1,15 @@
+[package]
+name = "uitool"
+version = "0.1.0"
+edition = "2021"
+description = "Practical Android UI driver — dump, find, tap, shot over adb"
+license = "MIT"
+
+[[bin]]
+name = "uitool"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+image = "0.25"

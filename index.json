@@ -1,0 +1,155 @@
+{
+  "name": "android-tools",
+  "version": "0.1.0",
+  "description": "Two adb-based CLI tools for Android development: a live logcat streamer with a TUI and a UI automation driver.",
+  "license": "MIT",
+  "language": "rust",
+  "edition": "2021",
+  "catalog_updated": "2026-10-17",
+  "repository": {
+    "type": "git",
+    "root": ".",
+    "workspace": true,
+    "manifest": "Cargo.toml",
+    "readme": "README.md",
+    "license_file": "LICENSE"
+  },
+  "requirements": {
+    "rust": "stable (verified with rustc 1.99.0)",
+    "adb": "Android SDK platform-tools in PATH",
+    "device": "Connected Android device or emulator with USB debugging authorized"
+  },
+  "build": {
+    "tool": "cargo",
+    "release": "cargo build --release",
+    "test": "cargo test --workspace",
+    "binaries_dir": "target/release"
+  },
+  "tools": [
+    {
+      "id": "logstream",
+      "name": "logstream",
+      "path": "logstream",
+      "binary": "logstream",
+      "version": "0.1.0",
+      "edition": "2021",
+      "language": "rust",
+      "license": "MIT",
+      "description": "Live Android log streamer - logcat, but actually nice",
+      "long_description": "Streams `adb logcat` (threadtime, main/system/crash buffers) filtered to one app package, with a ratatui TUI (search, level/tag filters, pid tracking, crash and restart banners) plus plain and JSONL output modes for piping.",
+      "readme": "logstream/README.md",
+      "license_file": "logstream/LICENSE",
+      "manifest": "logstream/Cargo.toml",
+      "entrypoint": "logstream/src/main.rs",
+      "category": "logging",
+      "tags": ["android", "logcat", "adb", "tui", "debugging", "streaming", "jsonl"],
+      "requires": {
+        "adb": true,
+        "installed_package": true
+      },
+      "cli": {
+        "type": "binary",
+        "subcommands": false,
+        "flags": [
+          { "name": "--package", "short": "-p", "type": "string", "default": "dev.yoanndev90.statusbarhider", "description": "App package name (release, then .debug is auto-tried)." },
+          { "name": "--serial", "short": "-s", "type": "string", "description": "adb serial (auto-picked when a single device is connected)." },
+          { "name": "--all", "type": "bool", "description": "Show every process (disable app-pid filtering)." },
+          { "name": "--level", "short": "-l", "type": "string", "default": "v", "description": "Minimum level to display (v/d/i/w/e/f)." },
+          { "name": "--tag", "short": "-t", "type": "string[]", "description": "Keep only tags starting with this prefix (repeatable)." },
+          { "name": "--skip", "type": "string[]", "description": "Drop tags starting with this prefix (repeatable)." },
+          { "name": "--search", "short": "-q", "type": "string", "default": "", "description": "Initial search query (also filterable live with / in the TUI)." },
+          { "name": "--buffer", "short": "-b", "type": "usize", "default": 10000, "description": "Ring-buffer capacity (lines)." },
+          { "name": "--clear", "type": "bool", "description": "Clear logcat buffer before streaming." },
+          { "name": "--json", "type": "bool", "description": "Write JSON lines (one object per record) instead of the TUI." },
+          { "name": "--plain", "type": "bool", "description": "Plain colored output (no TUI). Auto-selected when stdout is not a TTY." },
+          { "name": "--out", "short": "-o", "type": "path", "description": "Mirror output to this file (works with any mode)." }
+        ],
+        "modes": ["tui", "plain", "jsonl"],
+        "tui_keys": ["q / Ctrl+C quit", "/ search", "n / N next/prev match", "+ allow tag", "- skip tag", ": set level", "c clear buffer", "Ctrl+A toggle app/all pids", "PgUp/PgDn/Home/End/arrows navigate", "mouse scroll"]
+      },
+      "features": [
+        "App-pid filtering with crash history kept across restarts",
+        "Auto package resolution (tries <pkg> then <pkg>.debug)",
+        "Crash / start / restart / died banners (AndroidRuntime FATAL EXCEPTION detection)",
+        "Stack-trace continuation lines merged into the record",
+        "Live TUI with regex search, level and tag filters",
+        "JSONL and plain modes for scripts, optional file mirror"
+      ],
+      "dependencies": {
+        "anyhow": "1",
+        "clap": "4",
+        "crossterm": "0.29",
+        "ratatui": "0.30",
+        "regex": "1",
+        "serde": "1",
+        "serde_json": "1",
+        "unicode-width": "0.2"
+      },
+      "tests": true,
+      "source": {
+        "files": ["main.rs", "adb.rs", "buffer.rs", "parse.rs", "render.rs", "tui.rs"],
+        "loc": 2416
+      }
+    },
+    {
+      "id": "uitool",
+      "name": "uitool",
+      "path": "uitool",
+      "binary": "uitool",
+      "version": "0.1.0",
+      "edition": "2021",
+      "language": "rust",
+      "license": "MIT",
+      "description": "Practical Android UI driver — dump, find, tap, shot over adb",
+      "long_description": "Drives a device UI from the command line: dumps the uiautomator hierarchy as labeled lines, finds/waits for nodes by text or content-desc, taps by label or coordinates, swipes, takes cropped/scaled screenshots, launches activities, sends keys and text.",
+      "readme": "uitool/README.md",
+      "license_file": "uitool/LICENSE",
+      "manifest": "uitool/Cargo.toml",
+      "entrypoint": "uitool/src/main.rs",
+      "category": "automation",
+      "tags": ["android", "adb", "uiautomator", "automation", "screenshot", "testing", "cli"],
+      "requires": {
+        "adb": true,
+        "screen_on": "uiautomator dump fails on a locked/off screen"
+      },
+      "cli": {
+        "type": "binary",
+        "subcommands": true,
+        "global_flags": [
+          { "name": "--serial", "short": "-s", "type": "string", "description": "adb serial (auto-picked when a single device is connected)." }
+        ],
+        "subcommands": [
+          { "name": "wake", "args": [], "description": "Wake + dismiss keyguard + collapse status bar." },
+          { "name": "dump", "args": [], "description": "Dump UI hierarchy: one line per labeled node (`text [bounds]`)." },
+          { "name": "find", "args": ["<query>"], "flags": [{ "name": "--clickable", "type": "bool", "description": "Only clickable nodes." }], "description": "Find nodes matching text/content-desc (case-insensitive substring). Exit 1 if none." },
+          { "name": "wait", "args": ["<query>"], "flags": [{ "name": "--timeout", "short": "-t", "type": "secs", "default": 10, "description": "Timeout seconds." }], "description": "Wait until a node matches (poll dump)." },
+          { "name": "tap", "args": ["<x> <y> | <label>"], "flags": [{ "name": "--duration", "short": "-d", "type": "ms", "default": 80, "description": "Milliseconds between down/up." }], "description": "Tap by coordinates or by label." },
+          { "name": "long-press", "args": ["<query>"], "flags": [{ "name": "--duration", "short": "-d", "type": "ms", "default": 600, "description": "Press duration." }], "description": "Long-press a label (zero-length swipe)." },
+          { "name": "swipe", "args": ["<x1> <y1> <x2> <y2> [ms]"], "flags": [], "description": "Swipe between coordinates (default 300 ms)." },
+          { "name": "shot", "args": [], "flags": [{ "name": "--out", "short": "-o", "type": "path", "description": "Output path (.jpg/.png). Default /tmp/uitool-<epoch>.jpg" }, { "name": "--crop", "type": "x1,y1,x2,y2", "description": "Crop before save." }, { "name": "--scale", "type": "f32", "default": 1.0, "description": "Nearest upscale factor after crop." }, { "name": "--max-dim", "type": "u32", "default": 0, "description": "Cap longest side (0 = keep full)." }, { "name": "--quality", "type": "u8", "default": 75, "description": "JPEG quality 1-100." }, { "name": "--wake", "type": "bool", "description": "Wake before capture." }], "description": "Screenshot → jpg/png on disk (prints path)." },
+          { "name": "launch", "args": ["<package> | <package/.Activity>"], "flags": [], "description": "Launch an activity (appends /.MainActivity when only a package is given)." },
+          { "name": "key", "args": ["<KEYCODE_HOME | numeric>"], "flags": [], "description": "Send key event." },
+          { "name": "input", "args": ["<text>"], "flags": [], "description": "Type text (spaces → %s)." },
+          { "name": "stop", "args": ["<package>"], "flags": [], "description": "Force-stop a package." }
+        ]
+      },
+      "features": [
+        "Label-based interaction: tap/find/wait use text or content-desc, no coordinates needed",
+        "Clickable nodes preferred as tap target, bounds center computed automatically",
+        "uiautomator dump with hard timeout (no hangs) and screen-off detection",
+        "Screenshot pipeline: crop, nearest upscale, max-dim resize, JPEG quality",
+        "Serial auto-pick when exactly one device is connected"
+      ],
+      "dependencies": {
+        "anyhow": "1",
+        "clap": "4",
+        "image": "0.25"
+      },
+      "tests": true,
+      "source": {
+        "files": ["main.rs", "adb.rs", "ui.rs", "shot.rs"],
+        "loc": 692
+      }
+    }
+  ]
+}
