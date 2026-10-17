@@ -1,69 +1,21 @@
 use std::io::{BufRead, BufReader};
-use std::process::{Child, Command, Stdio};
+use std::process::Stdio;
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use anyhow::{bail, Context, Result};
 
+use adbkit::{Adb, ChildHandle};
+
 use crate::parse::{parse_threadtime, Record};
-
-/// Shared handle on the running `adb logcat` child so the main thread can kill it.
-pub struct Logcat {
-	child: Mutex<Child>,
-}
-
-impl Logcat {
-	pub fn kill(&self) {
-		if let Ok(mut c) = self.child.lock() {
-			let _ = c.kill();
-			let _ = c.wait();
-		}
-	}
-}
-
-pub fn adb_base(serial: Option<&str>) -> Command {
-	let mut c = Command::new("adb");
-	if let Some(s) = serial {
-		c.args(["-s", s]);
-	}
-	c
-}
-
-/// Pick a serial: explicit flag, or the single connected device.
-pub fn pick_serial(explicit: Option<&str>) -> Result<String> {
-	if let Some(s) = explicit {
-		return Ok(s.to_string());
-	}
-	let out = Command::new("adb")
-		.args(["devices"])
-		.output()
-		.context("adb not found in PATH — install platform-tools")?;
-	let mut devices = Vec::new();
-	for line in String::from_utf8_lossy(&out.stdout).lines().skip(1) {
-		let mut it = line.split_whitespace();
-		if let (Some(id), Some(state)) = (it.next(), it.next()) {
-			if state == "device" {
-				devices.push(id.to_string());
-			}
-		}
-	}
-	match devices.len() {
-		0 => bail!("no adb device connected (or unauthorized)"),
-		1 => Ok(devices.remove(0)),
-		_ => bail!("multiple devices connected — pass --serial (found: {})", devices.join(", ")),
-	}
-}
 
 /// Resolve the actual package name: try `pkg`, then `pkg.debug`.
 pub fn resolve_package(serial: &str, pkg: &str) -> Result<String> {
+	let adb = Adb::new(serial);
 	for candidate in [pkg.to_string(), format!("{pkg}.debug")] {
-		let out = adb_base(Some(serial))
-			.args(["shell", "pm", "path", &candidate])
-			.output();
-		if let Ok(o) = out {
-			let stdout = String::from_utf8_lossy(&o.stdout);
-			if stdout.contains("package:") {
+		if let Some(out) = adb.shell_opt(&["pm", "path", &candidate]) {
+			if out.contains("package:") {
 				return Ok(candidate);
 			}
 		}
@@ -73,17 +25,9 @@ pub fn resolve_package(serial: &str, pkg: &str) -> Result<String> {
 
 /// Pid of `package` via `pidof` (fast, single process — app has no remote process).
 pub fn pid_of(serial: &str, package: &str) -> Option<u32> {
-	let out = adb_base(Some(serial))
-		.args(["shell", "pidof", "-s", package])
-		.output()
-		.ok()?;
-	if !out.status.success() {
-		return None;
-	}
-	String::from_utf8_lossy(&out.stdout)
-		.split_whitespace()
-		.next()
-		.and_then(|s| s.parse().ok())
+	let adb = Adb::new(serial);
+	let out = adb.shell(&["pidof", "-s", package]).ok()?;
+	out.split_whitespace().next().and_then(|s| s.parse().ok())
 }
 
 /// Start `adb logcat` streaming into `tx`.
@@ -92,11 +36,12 @@ pub fn pid_of(serial: &str, package: &str) -> Option<u32> {
 /// * `-b main,system,crash` — crash buffer included (crashes live there).
 /// * threadtime format parsed by [`parse_threadtime`]; continuation lines
 ///   (stack traces) are merged into the previous record here.
-pub fn spawn_logcat(serial: &str, clear: bool, tx: Sender<Event>) -> Result<Arc<Logcat>> {
+pub fn spawn_logcat(serial: &str, clear: bool, tx: Sender<Event>) -> Result<Arc<ChildHandle>> {
 	if clear {
-		let _ = adb_base(Some(serial)).args(["logcat", "-c"]).output();
+		let _ = Adb::new(serial).command().args(["logcat", "-c"]).output();
 	}
-	let mut child = adb_base(Some(serial))
+	let mut child = Adb::new(serial)
+		.command()
 		.args(["logcat", "-v", "threadtime", "-b", "main,system,crash", "-T", "1"])
 		.stdout(Stdio::piped())
 		.stderr(Stdio::null())
@@ -104,9 +49,7 @@ pub fn spawn_logcat(serial: &str, clear: bool, tx: Sender<Event>) -> Result<Arc<
 		.context("failed to spawn adb logcat")?;
 
 	let stdout = child.stdout.take().context("no stdout")?;
-	let handle = Arc::new(Logcat {
-		child: Mutex::new(child),
-	});
+	let handle = Arc::new(ChildHandle::new(child));
 
 	let lc = Arc::clone(&handle);
 	std::thread::spawn(move || {
@@ -177,17 +120,4 @@ pub enum Event {
 	LogcatExited,
 	/// A line failed to parse (malformed logcat output); string is the reason.
 	ParseError(String),
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	#[test]
-	fn pick_serial_fails_gracefully_without_adb() {
-		// Can't assert success (depends on env); just ensure it doesn't panic on parse.
-		if Command::new("adb").arg("--version").output().is_err() {
-			assert!(pick_serial(None).is_err());
-		}
-	}
 }

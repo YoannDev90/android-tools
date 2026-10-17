@@ -27,6 +27,43 @@
   },
   "tools": [
     {
+      "id": "adbkit",
+      "name": "adbkit",
+      "path": "adbkit",
+      "version": "0.1.0",
+      "edition": "2021",
+      "language": "rust",
+      "license": "MIT",
+      "description": "Shared adb helpers for the android-tools workspace",
+      "long_description": "Library crate: device picking and shell/exec-out wrappers with timeouts. No domain logic — the tools own that.",
+      "readme": "adbkit/README.md",
+      "license_file": "adbkit/LICENSE",
+      "manifest": "adbkit/Cargo.toml",
+      "entrypoint": "adbkit/src/lib.rs",
+      "category": "library",
+      "tags": ["adb", "shared", "plumbing"],
+      "requires": {
+        "adb": "Android SDK platform-tools in PATH"
+      },
+      "cli": {
+        "type": "library"
+      },
+      "features": [
+        "Serial auto-pick when a single device is connected",
+        "shell_opt for commands whose failure is a normal outcome",
+        "shell_timeout with hard kill (uiautomator dump hangs)",
+        "exec_out for raw stdout (screencap)"
+      ],
+      "dependencies": {
+        "anyhow": "1"
+      },
+      "tests": true,
+      "source": {
+        "files": ["lib.rs"],
+        "loc": 199
+      }
+    },
+    {
       "id": "logstream",
       "name": "logstream",
       "path": "logstream",

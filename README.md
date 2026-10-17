@@ -1,10 +1,12 @@
 # Android Tools
 
-Two small, sharp CLI tools for Android development over `adb`, written in Rust.
-Each tool is a standalone crate; the repository is a Cargo workspace.
+Two small, sharp CLI tools for Android development over `adb`, written in Rust,
+plus the shared library they build on. Each tool is a standalone crate; the
+repository is a Cargo workspace.
 
-| Tool | Description |
-|------|-------------|
+| Crate | Description |
+|-------|-------------|
+| [`adbkit`](adbkit/) | Shared `adb` helpers — device picking, shell/exec-out wrappers with timeouts (library) |
 | [`logstream`](logstream/) | Live Android log streamer — `logcat`, but actually nice: TUI, app-pid filter, search, crash/restart banners, JSONL output |
 | [`uitool`](uitool/) | Practical Android UI driver — dump, find, wait, tap, swipe, screenshot, launch, type over `adb` |
 
@@ -50,11 +52,16 @@ Full usage: [`logstream/README.md`](logstream/README.md) and [`uitool/README.md`
 
 ```
 .
-├── Cargo.toml          # Cargo workspace (members: logstream, uitool)
+├── Cargo.toml          # Cargo workspace (members: adbkit, logstream, uitool)
 ├── Cargo.lock          # single lockfile for the whole workspace
-├── index.json          # machine-readable catalog of the tools (descriptions + metadata)
+├── index.json          # machine-readable catalog of the crates (descriptions + metadata)
 ├── README.md           # this file
-├── LICENSE             # MIT (also duplicated inside each tool folder)
+├── LICENSE             # MIT (also duplicated inside each crate folder)
+├── adbkit/             # shared adb helpers (library)
+│   ├── Cargo.toml
+│   ├── LICENSE
+│   ├── README.md
+│   └── src/lib.rs
 ├── logstream/          # tool 1 — log streamer
 │   ├── Cargo.toml
 │   ├── LICENSE

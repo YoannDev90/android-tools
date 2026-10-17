@@ -10,6 +10,7 @@ name = "logstream"
 path = "src/main.rs"
 
 [dependencies]
+adbkit = { path = "../adbkit" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 crossterm = "0.29"

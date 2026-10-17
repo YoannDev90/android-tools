@@ -94,9 +94,10 @@ cargo clippy
 cargo build --release
 ```
 
-Source layout: `src/main.rs` (CLI/modes), `adb.rs` (logcat + pid watcher),
-`parse.rs` (threadtime parser), `buffer.rs` (ring buffer/filters),
-`render.rs` (plain/JSONL renderers), `tui.rs` (ratatui app).
+Source layout: `src/main.rs` (CLI/modes), `adb.rs` (logcat + pid watcher +
+package resolution), `parse.rs` (threadtime parser), `buffer.rs` (ring
+buffer/filters), `render.rs` (plain/JSONL renderers), `tui.rs` (ratatui app).
+Depends on [`adbkit`](../adbkit/) for all generic `adb` plumbing.
 
 ## License
 

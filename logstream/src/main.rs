@@ -8,8 +8,9 @@ use std::io::{IsTerminal, Write};
 use std::sync::mpsc::{self, Receiver};
 use std::time::Duration;
 
-use anyhow::{Context, Result};
-use clap::Parser;
+	use anyhow::{Context, Result};
+	use adbkit::pick_serial;
+	use clap::Parser;
 
 use buffer::{Banner, Buffer, Filter, PidMode};
 use parse::Level;
@@ -75,7 +76,7 @@ struct Cli {
 fn main() -> Result<()> {
 	let cli = Cli::parse();
 
-	let serial = adb::pick_serial(cli.serial.as_deref())?;
+	let serial = pick_serial(cli.serial.as_deref())?;
 	let package = adb::resolve_package(&serial, &cli.package)?;
 	let min_level = Level::from_str(&cli.level).context("--level must be one of v/d/i/w/e/f")?;
 
