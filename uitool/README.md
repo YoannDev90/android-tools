@@ -36,7 +36,7 @@ uitool swipe 540 2000 540 800 300            # x1 y1 x2 y2 [ms]
 uitool shot -o /tmp/screen.png               # screenshot (prints the path)
 uitool shot --crop 0,100,1080,400 --scale 2  # crop then nearest upscale
 uitool shot --wake --quality 90
-uitool launch com.example.myapp              # → com.example.myapp/.MainActivity
+uitool launch com.example.myapp              # resolves the launcher activity
 uitool launch com.example.myapp/.MainActivity
 uitool key HOME                              # or numeric: uitool key 3
 uitool input "hello world"                   # spaces → %s for adb
@@ -54,11 +54,11 @@ connected it is picked automatically.
 | `dump` | — | One line per labeled node: `text [x1,y1,x2,y2]` (`*` = clickable) |
 | `find` | `<query> [--clickable]` | Case-insensitive substring on text/content-desc. Prints `[bounds] cx= cy= clickable=`; **exit 1 if no match** |
 | `wait` | `<query> [-t/--timeout <secs>]` | Poll the dump until a match (default 10 s), print its bounds |
-| `tap` | `<x> <y>` or `<label>` `[-d/--duration <ms>]` | Tap by coordinates, or by label (center of best match) |
-| `long-press` | `<query> [-d/--duration <ms>]` | Long-press a label (zero-length swipe, default 600 ms) |
+| `tap` | `<x> <y>` or `<label>` `[-d/--duration <ms>]` | Tap by coordinates, or by label (center of best match). `0` (default) = quick tap, `>0` holds the press |
+| `long-press` | `<query> [-d/--duration <ms>]` | Long-press a label (default 600 ms) |
 | `swipe` | `<x1> <y1> <x2> <y2> [ms]` | Swipe (default 300 ms) |
 | `shot` | `[-o PATH] [--crop x1,y1,x2,y2] [--scale N] [--max-dim N] [--quality 1-100] [--wake]` | Screenshot → jpg/png/webp, prints the output path |
-| `launch` | `<pkg>` or `<pkg/.Activity>` | Start an activity (`.MainActivity` appended for a bare package) |
+| `launch` | `<pkg>` or `<pkg/.Activity>` | Start an activity; a bare package resolves its launcher activity (`cmd package resolve-activity`) |
 | `key` | `<CODE>` | `KEYCODE_HOME` or numeric code |
 | `input` | `<text>` | Type text |
 | `stop` | `<pkg>` | Force-stop a package |

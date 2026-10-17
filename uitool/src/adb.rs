@@ -102,6 +102,37 @@ pub fn exec_out(serial: &str, args: &[&str]) -> Result<Vec<u8>> {
 	Ok(out.stdout)
 }
 
+/// Press at (x, y): quick `input tap` when `duration` is 0, hold `duration` ms
+/// otherwise (`input swipe` with identical endpoints is the canonical hold).
+pub fn press(serial: &str, x: i32, y: i32, duration: u64) -> Result<()> {
+	if duration == 0 {
+		shell(serial, &["input", "tap", &x.to_string(), &y.to_string()])?;
+	} else {
+		shell(
+			serial,
+			&[
+				"input", "swipe", &x.to_string(), &y.to_string(), &x.to_string(), &y.to_string(),
+				&duration.to_string(),
+			],
+		)?;
+	}
+	Ok(())
+}
+
+/// Launcher activity of a package (`cmd package resolve-activity --brief`).
+pub fn resolve_launcher(serial: &str, package: &str) -> Result<String> {
+	let out = shell(serial, &["cmd", "package", "resolve-activity", "--brief", package])
+		.with_context(|| format!("resolve-activity {package}"))?;
+	parse_component(&out)
+		.map(str::to_string)
+		.with_context(|| format!("no launcher activity for {package:?} — pass the full component (pkg/.Activity)"))
+}
+
+/// Last `package/class` line of a `resolve-activity --brief` dump.
+fn parse_component(out: &str) -> Option<&str> {
+	out.lines().map(str::trim).rfind(|l| l.contains('/'))
+}
+
 /// Wake screen, dismiss keyguard, collapse status bar / notifications.
 pub fn wake(serial: &str) -> Result<()> {
 	shell_quiet(serial, &["input", "keyevent", "KEYCODE_WAKEUP"]);
@@ -112,4 +143,27 @@ pub fn wake(serial: &str) -> Result<()> {
 
 pub fn screencap(serial: &str) -> Result<Vec<u8>> {
 	exec_out(serial, &["screencap", "-p"])
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn parse_component_takes_last_slash_line() {
+		let out = "priority=0 preferredOrder=0 match=0x108000 specificIndex=-1 isDefault=true\ncom.foo/.MainActivity\n";
+		assert_eq!(parse_component(out), Some("com.foo/.MainActivity"));
+	}
+
+	#[test]
+	fn parse_component_skips_lines_without_component() {
+		let out = "No activity found\ncom.foo/com.foo.Other\n";
+		assert_eq!(parse_component(out), Some("com.foo/com.foo.Other"));
+	}
+
+	#[test]
+	fn parse_component_none_without_activity() {
+		assert_eq!(parse_component("No activity found\n"), None);
+		assert_eq!(parse_component(""), None);
+	}
 }

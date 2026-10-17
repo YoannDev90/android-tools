@@ -42,14 +42,14 @@ enum Cmd {
 		#[arg(short = 't', long, default_value_t = 10)]
 		timeout: u64,
 	},
-	/// Tap by coordinates (`uitool tap 978 2316`) or by label (`uitool tap Aperçu`).
-	Tap {
-		/// Either `x y` (two args) or a label.
-		args: Vec<String>,
-		/// Milliseconds between down/up.
-		#[arg(short, long, default_value_t = 80)]
-		duration: u64,
-	},
+		/// Tap by coordinates (`uitool tap 978 2316`) or by label (`uitool tap Aperçu`).
+		Tap {
+			/// Either `x y` (two args) or a label.
+			args: Vec<String>,
+			/// Milliseconds to hold the press (0 = quick `input tap`).
+			#[arg(short, long, default_value_t = 0)]
+			duration: u64,
+		},
 	/// Long-press a label.
 	LongPress {
 		query: String,
@@ -86,8 +86,8 @@ enum Cmd {
 		#[arg(long)]
 		wake: bool,
 	},
-	/// Launch an activity (package or package/.Activity).
-	Launch {
+		/// Launch an activity: package (resolves its launcher activity) or package/.Activity.
+		Launch {
 		/// Package name, or package/component.
 		target: String,
 	},
@@ -171,7 +171,7 @@ fn main() -> Result<()> {
 			2 => {
 				let x: i32 = args[0].parse().context("x")?;
 				let y: i32 = args[1].parse().context("y")?;
-				adb::shell(&serial, &["input", "tap", &x.to_string(), &y.to_string()])?;
+				adb::press(&serial, x, y, duration)?;
 				println!("{x},{y}");
 			}
 			1 => {
@@ -179,16 +179,7 @@ fn main() -> Result<()> {
 				let nodes = ui::parse_hierarchy(&xml);
 				let n = ui::pick_tap_target(&nodes, &args[0])?;
 				let b = n.bounds.unwrap();
-				adb::shell(
-					&serial,
-					&[
-						"input",
-						"tap",
-						&b.cx().to_string(),
-						&b.cy().to_string(),
-					],
-				)?;
-				let _ = duration;
+				adb::press(&serial, b.cx(), b.cy(), duration)?;
 				println!("{},{} ({})", b.cx(), b.cy(), args[0]);
 			}
 			_ => bail!("usage: uitool tap <x> <y> | uitool tap <label>"),
@@ -198,18 +189,7 @@ fn main() -> Result<()> {
 			let nodes = ui::parse_hierarchy(&xml);
 			let n = ui::pick_tap_target(&nodes, &query)?;
 			let b = n.bounds.unwrap();
-			adb::shell(
-				&serial,
-				&[
-					"input",
-					"swipe",
-					&b.cx().to_string(),
-					&b.cy().to_string(),
-					&b.cx().to_string(),
-					&b.cy().to_string(),
-					&duration.to_string(),
-				],
-			)?;
+			adb::press(&serial, b.cx(), b.cy(), duration)?;
 			println!("{},{} ({})", b.cx(), b.cy(), query);
 		}
 		Cmd::Swipe { x1, y1, x2, y2, ms } => {
@@ -263,7 +243,7 @@ fn main() -> Result<()> {
 			let component = if target.contains('/') {
 				target
 			} else {
-				format!("{target}/.MainActivity")
+				adb::resolve_launcher(&serial, &target)?
 			};
 			adb::shell(&serial, &["am", "start", "-n", &component])?;
 			println!("started {component}");
