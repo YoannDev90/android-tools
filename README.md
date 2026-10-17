@@ -24,8 +24,8 @@ cargo test --workspace
 `index.json` and this README are generated — edit the sources, then:
 
 ```bash
-python3 scripts/generate_index.py   # .METADATA.toml → index.json
-python3 scripts/generate_readme.py  # index.json → README.md
+python3 scripts/generate_index.py   # .METADATA.toml -> index.json
+python3 scripts/generate_readme.py  # index.json -> README.md
 ```
 
 `.METADATA.toml` lives at the root of each tool directory and holds the
