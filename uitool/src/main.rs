@@ -8,6 +8,8 @@ use std::time::{Duration, Instant};
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
 
+use adbkit::{pick_serial, Adb};
+
 use shot::ShotOpts;
 
 #[derive(Parser, Debug)]
@@ -101,15 +103,16 @@ enum Cmd {
 
 fn main() -> Result<()> {
 	let cli = Cli::parse();
-	let serial = adb::pick_serial(cli.serial.as_deref())?;
+	let serial = pick_serial(cli.serial.as_deref())?;
+	let dev = Adb::new(&serial);
 
 	match cli.cmd {
 		Cmd::Wake => {
-			adb::wake(&serial)?;
+			adb::wake(&dev)?;
 			println!("ok");
 		}
 		Cmd::Dump => {
-			let xml = ui::dump(&serial)?;
+			let xml = ui::dump(&dev)?;
 			let nodes = ui::parse_hierarchy(&xml);
 			// write! so `| head` exits 0 instead of panicking on SIGPIPE.
 			let mut out = std::io::stdout().lock();
@@ -126,7 +129,7 @@ fn main() -> Result<()> {
 			}
 		}
 		Cmd::Find { query, clickable } => {
-			let xml = ui::dump(&serial)?;
+			let xml = ui::dump(&dev)?;
 			let nodes = ui::parse_hierarchy(&xml);
 			let mut found = ui::find_nodes(&nodes, &query);
 			if clickable {
@@ -153,7 +156,7 @@ fn main() -> Result<()> {
 		Cmd::Wait { query, timeout } => {
 			let deadline = Instant::now() + Duration::from_secs(timeout);
 			loop {
-				let xml = ui::dump(&serial)?;
+				let xml = ui::dump(&dev)?;
 				let nodes = ui::parse_hierarchy(&xml);
 				if let Some(n) = ui::find_nodes(&nodes, &query).first() {
 					if let Some(b) = n.bounds {
@@ -171,30 +174,29 @@ fn main() -> Result<()> {
 			2 => {
 				let x: i32 = args[0].parse().context("x")?;
 				let y: i32 = args[1].parse().context("y")?;
-				adb::press(&serial, x, y, duration)?;
+				adb::press(&dev, x, y, duration)?;
 				println!("{x},{y}");
 			}
 			1 => {
-				let xml = ui::dump(&serial)?;
+				let xml = ui::dump(&dev)?;
 				let nodes = ui::parse_hierarchy(&xml);
 				let n = ui::pick_tap_target(&nodes, &args[0])?;
 				let b = n.bounds.unwrap();
-				adb::press(&serial, b.cx(), b.cy(), duration)?;
+				adb::press(&dev, b.cx(), b.cy(), duration)?;
 				println!("{},{} ({})", b.cx(), b.cy(), args[0]);
 			}
 			_ => bail!("usage: uitool tap <x> <y> | uitool tap <label>"),
 		},
 		Cmd::LongPress { query, duration } => {
-			let xml = ui::dump(&serial)?;
+			let xml = ui::dump(&dev)?;
 			let nodes = ui::parse_hierarchy(&xml);
 			let n = ui::pick_tap_target(&nodes, &query)?;
 			let b = n.bounds.unwrap();
-			adb::press(&serial, b.cx(), b.cy(), duration)?;
+			adb::press(&dev, b.cx(), b.cy(), duration)?;
 			println!("{},{} ({})", b.cx(), b.cy(), query);
 		}
 		Cmd::Swipe { x1, y1, x2, y2, ms } => {
-			adb::shell(
-				&serial,
+			dev.shell(
 				&[
 					"input",
 					"swipe",
@@ -236,16 +238,16 @@ fn main() -> Result<()> {
 				quality,
 				wake,
 			};
-			let path = shot::take(&serial, &opts)?;
+			let path = shot::take(&dev, &opts)?;
 			println!("{}", path.display());
 		}
 		Cmd::Launch { target } => {
 			let component = if target.contains('/') {
 				target
 			} else {
-				adb::resolve_launcher(&serial, &target)?
+				adb::resolve_launcher(&dev, &target)?
 			};
-			adb::shell(&serial, &["am", "start", "-n", &component])?;
+			dev.shell(&["am", "start", "-n", &component])?;
 			println!("started {component}");
 		}
 		Cmd::Key { code } => {
@@ -254,7 +256,7 @@ fn main() -> Result<()> {
 			} else {
 				format!("KEYCODE_{code}")
 			};
-			adb::shell(&serial, &["input", "keyevent", &c])?;
+			dev.shell(&["input", "keyevent", &c])?;
 			println!("{c}");
 		}
 		Cmd::Input { text } => {
@@ -264,11 +266,11 @@ fn main() -> Result<()> {
 				.replace(' ', "%s")
 				.replace('"', "\\\"")
 				.replace("'", "%s");
-			adb::shell(&serial, &["input", "text", &escaped])?;
+			dev.shell(&["input", "text", &escaped])?;
 			println!("sent {} bytes", text.len());
 		}
 		Cmd::Stop { package } => {
-			adb::shell(&serial, &["am", "force-stop", &package])?;
+			dev.shell(&["am", "force-stop", &package])?;
 			println!("stopped {package}");
 		}
 	}

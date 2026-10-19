@@ -25,8 +25,9 @@ use tui::App;
 )]
 struct Cli {
 	/// App package name (release, then `.debug` is auto-tried).
-	#[arg(short, long, default_value = "dev.yoanndev90.statusbarhider")]
-	package: String,
+	/// Omit to stream every process (no pid filtering).
+	#[arg(short, long)]
+	package: Option<String>,
 
 	/// adb serial (auto-picked when a single device is connected).
 	#[arg(short, long)]
@@ -68,7 +69,8 @@ struct Cli {
 	#[arg(long)]
 	plain: bool,
 
-	/// Mirror output to this file (works with any mode).
+	/// Mirror everything shown to this file: raw records plus `[logstream]`
+	/// banner lines (works with any mode, including --json).
 	#[arg(short, long)]
 	out: Option<std::path::PathBuf>,
 }
@@ -77,19 +79,32 @@ fn main() -> Result<()> {
 	let cli = Cli::parse();
 
 	let serial = pick_serial(cli.serial.as_deref())?;
-	let package = adb::resolve_package(&serial, &cli.package)?;
+	// Package is optional: without one, stream every process (no pid filter).
+	let package = match cli.package.as_deref() {
+		Some(pkg) => Some(adb::resolve_package(&serial, pkg)?),
+		None => None,
+	};
 	let min_level = Level::from_str(&cli.level).context("--level must be one of v/d/i/w/e/f")?;
+
+	let pid_mode = if cli.all || package.is_none() { PidMode::All } else { PidMode::App };
 
 	let (tx, rx) = mpsc::channel();
 	let logcat = adb::spawn_logcat(&serial, cli.clear, tx.clone())?;
-	let pid_slot = adb::spawn_pid_watcher(serial.clone(), package.clone(), tx, Duration::from_millis(700));
-	// Seed the current pid so the header is correct from frame 1.
-	if let Some(pid) = adb::pid_of(&serial, &package) {
-		*log_slot_lock(&pid_slot) = Some(pid);
-	}
+	// The slot returned by the watcher *is* the shared slot (its thread holds
+	// a clone and writes through it).
+	let pid_slot: PidSlot = match &package {
+		Some(pkg) => {
+			let slot = adb::spawn_pid_watcher(serial.clone(), pkg.clone(), tx, Duration::from_millis(700));
+			// Seed the current pid so the header is correct from frame 1.
+			if let Some(pid) = adb::pid_of(&serial, pkg) {
+				*log_slot_lock(&slot) = Some(pid);
+			}
+			slot
+		}
+		None => std::sync::Arc::new(std::sync::Mutex::new(None)),
+	};
 
-	let pid_mode = if cli.all { PidMode::All } else { PidMode::App };
-	let mut filter = Filter::new(pid_mode, package.clone());
+	let mut filter = Filter::new(pid_mode, package.clone().unwrap_or_default());
 	filter.min_level = min_level;
 	filter.allow = cli.tags.clone();
 	filter.deny = cli.skips.clone();
@@ -107,6 +122,7 @@ fn main() -> Result<()> {
 
 	let mode_plain = cli.plain || cli.json || !std::io::stdout().is_terminal();
 
+	let package = package.unwrap_or_default();
 	let result = if mode_plain {
 		run_plain(&cli, filter, &rx, &pid_slot, &mut out_file, &package)
 	} else {
@@ -209,9 +225,12 @@ fn handle_event_plain(
 					f.flush()?;
 				}
 			}
-			if is_crash && !json {
+			if is_crash {
 				let e = entry_from_banner(Banner::Crash, at);
-				renderer.write_to(raw, &e)?;
+				if !json {
+					renderer.write_to(raw, &e)?;
+				}
+				write_banner_note(out_file, &e.record.msg)?;
 			}
 		}
 		adb::Event::PidChanged(pid) => {
@@ -234,10 +253,7 @@ fn handle_event_plain(
 						renderer.write_to(raw, &e)?;
 						raw.flush()?;
 					}
-					if let Some(f) = out_file.as_mut() {
-						f.write_all(format!("[logstream] {}\n", e.record.msg).as_bytes())?;
-						f.flush()?;
-					}
+					write_banner_note(out_file, &e.record.msg)?;
 				}
 			}
 			// If the app died, wait for a possible restart — no action needed,
@@ -297,6 +313,16 @@ fn now_ms() -> u64 {
 		.duration_since(std::time::UNIX_EPOCH)
 		.unwrap_or_default()
 		.as_millis() as u64
+}
+
+/// `--out` mirror for banners: written in *every* mode (records are mirrored
+/// as raw lines) so the file always reflects everything that was shown.
+fn write_banner_note(out_file: &mut Option<std::io::BufWriter<std::fs::File>>, msg: &str) -> Result<()> {
+	if let Some(f) = out_file.as_mut() {
+		f.write_all(format!("[logstream] {msg}\n").as_bytes())?;
+		f.flush()?;
+	}
+	Ok(())
 }
 
 /// TUI mode.
@@ -383,6 +409,7 @@ fn event_loop<B: ratatui::backend::Backend>(
 					app.push_record(rec);
 					if is_crash {
 						app.push_banner(Banner::Crash, at);
+						write_banner_note(out_file, &Banner::Crash.text())?;
 					}
 				}
 				adb::Event::PidChanged(pid) => {
@@ -402,6 +429,7 @@ fn event_loop<B: ratatui::backend::Backend>(
 						_ => None,
 					};
 					if let Some(b) = banner {
+						write_banner_note(out_file, &b.text())?;
 						app.push_banner(b, now);
 					}
 					app.status = match pid {

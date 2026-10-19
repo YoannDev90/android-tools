@@ -5,7 +5,7 @@
   "license": "MIT",
   "language": "rust",
   "edition": "2021",
-  "catalog_updated": "2026-10-17",
+  "catalog_updated": "2026-10-19",
   "repository": {
     "type": "git",
     "root": ".",
@@ -63,7 +63,7 @@
         "files": [
           "lib.rs"
         ],
-        "loc": 199
+        "loc": 221
       }
     },
     {
@@ -103,6 +103,7 @@
         "JSONL and plain modes for scripts, optional file mirror"
       ],
       "dependencies": {
+        "adbkit": "0.1 (path)",
         "anyhow": "1",
         "clap": "4",
         "crossterm": "0.29",
@@ -122,7 +123,7 @@
           "render.rs",
           "tui.rs"
         ],
-        "loc": 2347
+        "loc": 2375
       }
     },
     {
@@ -158,9 +159,10 @@
         "Clickable nodes preferred as tap target, bounds center computed automatically",
         "uiautomator dump with hard timeout (no hangs) and screen-off detection",
         "Screenshot pipeline: crop, nearest upscale, max-dim resize, JPEG quality",
-        "Serial auto-pick when exactly one device is connected"
+        "Serial auto-pick when exactly one device is connected (via adbkit)"
       ],
       "dependencies": {
+        "adbkit": "0.1 (path)",
         "anyhow": "1",
         "clap": "4",
         "image": "0.25"
@@ -173,7 +175,7 @@
           "ui.rs",
           "shot.rs"
         ],
-        "loc": 726
+        "loc": 631
       }
     }
   ]

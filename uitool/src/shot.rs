@@ -4,6 +4,8 @@ use anyhow::{bail, Context, Result};
 use image::imageops::FilterType;
 use image::{DynamicImage, GenericImageView, ImageFormat};
 
+use adbkit::Adb;
+
 use crate::adb;
 
 #[derive(Debug, Default, Clone)]
@@ -28,11 +30,11 @@ fn default_out() -> PathBuf {
 	PathBuf::from(format!("/tmp/uitool-{ms}.jpg"))
 }
 
-pub fn take(serial: &str, opts: &ShotOpts) -> Result<PathBuf> {
+pub fn take(dev: &Adb, opts: &ShotOpts) -> Result<PathBuf> {
 	if opts.wake {
-		adb::wake(serial)?;
+		adb::wake(dev)?;
 	}
-	let png = adb::screencap(serial).context("screencap")?;
+	let png = adb::screencap(dev).context("screencap")?;
 	let img = image::load_from_memory(&png).context("decode screencap PNG")?;
 
 	let mut img = match opts.crop {

@@ -10,6 +10,7 @@ name = "uitool"
 path = "src/main.rs"
 
 [dependencies]
+adbkit = { path = "../adbkit" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 image = "0.25"

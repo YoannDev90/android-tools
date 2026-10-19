@@ -1,6 +1,6 @@
 use anyhow::{bail, Context, Result};
 
-use crate::adb;
+use adbkit::Adb;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Bounds {
@@ -149,15 +149,13 @@ pub fn parse_hierarchy(xml: &str) -> Vec<Node> {
 }
 
 /// Dump UI hierarchy from the device (via /sdcard, works reliably).
-pub fn dump(serial: &str) -> Result<String> {
-	let out = adb::shell_timeout(
-		serial,
+pub fn dump(dev: &Adb) -> Result<String> {
+	dev.shell_timeout(
 		&["uiautomator", "dump", "/sdcard/uitool.xml"],
 		std::time::Duration::from_secs(8),
 	)
 	.context("uiautomator dump")?;
-	let _ = out;
-	let xml = adb::exec_out(serial, &["cat", "/sdcard/uitool.xml"])?;
+	let xml = dev.exec_out(&["cat", "/sdcard/uitool.xml"])?;
 	let xml = String::from_utf8_lossy(&xml).into_owned();
 	if !xml.contains("<hierarchy") {
 		let preview: String = xml.chars().take(200).collect();

@@ -2,15 +2,16 @@
 
 Live Android log streamer — `logcat`, but actually nice.
 
-Streams `adb logcat` for **one app package** and gives you what stock `logcat`
-doesn't: a real TUI with search, level/tag filters, pid tracking, and banners
-for app start / restart / crash — plus plain and JSONL modes for scripts.
+Streams `adb logcat` for **one app package** (or every process, when no
+package is given) and gives you what stock `logcat` doesn't: a real TUI with
+search, level/tag filters, pid tracking, and banners for app start / restart /
+crash — plus plain and JSONL modes for scripts.
 
 ## Requirements
 
 - `adb` (Android SDK platform-tools) in `PATH`
 - A connected device/emulator, USB debugging authorized
-- The target package installed on the device
+- With `-p`: the target package installed on the device
 
 ## Install
 
@@ -23,8 +24,8 @@ cargo install --path logstream
 ## Usage
 
 ```bash
-logstream                                   # TUI on the default package
-logstream -p com.example.myapp              # follow a specific app
+logstream                                   # everything (all processes)
+logstream -p com.example.myapp              # follow one app (pid-filtered)
 logstream -p com.example.myapp -l w         # warnings and above
 logstream -p com.example.myapp -t OkHttp -t Retrofit
 logstream -p com.example.myapp --skip Choreographer
@@ -40,7 +41,7 @@ work with the same flag. With several devices attached, pass `-s <serial>`.
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `-p, --package <PKG>` | `dev.yoanndev90.statusbarhider` | App package name (`.debug` fallback auto-tried) |
+| `-p, --package <PKG>` | — (all processes) | App package name (`.debug` fallback auto-tried) |
 | `-s, --serial <SERIAL>` | auto | adb serial; auto-picked when a single device is connected |
 | `--all` | off | Show every process (disable app-pid filtering) |
 | `-l, --level <v\|d\|i\|w\|e\|f>` | `v` | Minimum level to display |
@@ -51,7 +52,7 @@ work with the same flag. With several devices attached, pass `-s <serial>`.
 | `--clear` | off | Clear logcat buffer before streaming |
 | `--json` | off | One JSON object per record (JSONL) |
 | `--plain` | off | Plain colored output, no TUI (auto when stdout is not a TTY) |
-| `-o, --out <PATH>` | — | Mirror output to this file (any mode) |
+| `-o, --out <PATH>` | — | Mirror everything shown (raw records + `[logstream]` banner lines), any mode |
 
 ### Modes
 

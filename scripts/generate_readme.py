@@ -6,7 +6,7 @@ import os
 
 ROOT_FILES = ["Cargo.toml", "Cargo.lock", "index.json", "README.md", "LICENSE"]
 ROOT_DIRS = ["adbkit", "logstream", "uitool", "scripts"]
-# Personal scratch notes — not part of the generated project docs.
+# Personal scratch notes / local tooling — not part of the generated project docs.
 EXCLUDED = {"Ideas.md", ".gitignore", ".git", "target"}
 
 

@@ -14,7 +14,7 @@ entrypoint = "uitool/src/main.rs"
 category = "automation"
 tags = ["android", "adb", "uiautomator", "automation", "screenshot", "testing", "cli"]
 requires = { adb = true, screen_on = "uiautomator dump fails on a locked/off screen" }
-features = ["Label-based interaction: tap/find/wait use text or content-desc, no coordinates needed", "Clickable nodes preferred as tap target, bounds center computed automatically", "uiautomator dump with hard timeout (no hangs) and screen-off detection", "Screenshot pipeline: crop, nearest upscale, max-dim resize, JPEG quality", "Serial auto-pick when exactly one device is connected"]
-dependencies = { anyhow = "1", clap = "4", image = "0.25" }
+features = ["Label-based interaction: tap/find/wait use text or content-desc, no coordinates needed", "Clickable nodes preferred as tap target, bounds center computed automatically", "uiautomator dump with hard timeout (no hangs) and screen-off detection", "Screenshot pipeline: crop, nearest upscale, max-dim resize, JPEG quality", "Serial auto-pick when exactly one device is connected (via adbkit)"]
+dependencies = { adbkit = "0.1 (path)", anyhow = "1", clap = "4", image = "0.25" }
 tests = true
 source = { files = ["main.rs", "adb.rs", "ui.rs", "shot.rs"] }

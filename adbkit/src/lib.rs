@@ -93,17 +93,15 @@ impl Adb {
 			.stderr(Stdio::piped())
 			.spawn()
 			.with_context(|| format!("adb shell {}", args.join(" ")))?;
+		// Drain the pipes on threads: a child that writes more than the pipe
+		// buffer (~64 KiB) would block on write, never exit, and the try_wait
+		// loop below would spin until the timeout killed it.
+		let stdout = read_pipe(child.stdout.take());
+		let stderr = read_pipe(child.stderr.take());
 		let start = Instant::now();
-		loop {
+		let status = loop {
 			if let Some(status) = child.try_wait()? {
-				let mut out = String::new();
-				if let Some(mut so) = child.stdout.take() {
-					let _ = so.read_to_string(&mut out);
-				}
-				if !status.success() {
-					bail!("adb shell {} failed: {out}", args.join(" "));
-				}
-				return Ok(out);
+				break status;
 			}
 			if start.elapsed() > timeout {
 				let _ = child.kill();
@@ -111,7 +109,20 @@ impl Adb {
 				bail!("adb shell {} timed out after {timeout:?}", args.join(" "));
 			}
 			std::thread::sleep(Duration::from_millis(50));
+		};
+		// The child exited (or was killed): the pipes are closed and the
+		// reader threads have (or soon will) hit EOF — joining makes the
+		// captured output complete.
+		let out = stdout.join().unwrap_or_default();
+		if !status.success() {
+			let err = stderr.join().unwrap_or_default();
+			bail!(
+				"adb shell {} failed: {}",
+				args.join(" "),
+				err.trim()
+			);
 		}
+		Ok(out)
 	}
 
 	/// `adb shell` ignoring failures.
@@ -147,6 +158,17 @@ impl Adb {
 		}
 		Ok(out.stdout)
 	}
+}
+
+/// Read a piped stream to EOF on its own thread (see [`Adb::shell_timeout`]).
+fn read_pipe<T: Read + Send + 'static>(pipe: Option<T>) -> std::thread::JoinHandle<String> {
+	std::thread::spawn(move || {
+		let mut buf = Vec::new();
+		if let Some(mut p) = pipe {
+			let _ = p.read_to_end(&mut buf);
+		}
+		String::from_utf8_lossy(&buf).into_owned()
+	})
 }
 
 /// Shared handle on a spawned child so the main thread can kill it.
