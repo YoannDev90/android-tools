@@ -61,12 +61,7 @@ pub fn parse_bounds(s: &str) -> Option<Bounds> {
 	if nums.len() != 4 {
 		return None;
 	}
-	Some(Bounds {
-		x1: nums[0],
-		y1: nums[1],
-		x2: nums[2],
-		y2: nums[3],
-	})
+	Some(Bounds { x1: nums[0], y1: nums[1], x2: nums[2], y2: nums[3] })
 }
 
 fn decode_entities(s: &str) -> String {
@@ -86,9 +81,16 @@ fn decode_entities(s: &str) -> String {
 				"&apos;" | "&#39;" => Some("'".to_string()),
 				_ => {
 					if let Some(hex) = ent.strip_prefix("&#x").and_then(|e| e.strip_suffix(';')) {
-						u32::from_str_radix(hex, 16).ok().and_then(char::from_u32).map(|c| c.to_string())
+						u32::from_str_radix(hex, 16)
+							.ok()
+							.and_then(char::from_u32)
+							.map(|c| c.to_string())
 					} else {
-						ent.strip_prefix("&#").and_then(|e| e.strip_suffix(';')).and_then(|e| e.parse::<u32>().ok()).and_then(char::from_u32).map(|c| c.to_string())
+						ent.strip_prefix("&#")
+							.and_then(|e| e.strip_suffix(';'))
+							.and_then(|e| e.parse::<u32>().ok())
+							.and_then(char::from_u32)
+							.map(|c| c.to_string())
 					}
 				}
 			};
@@ -138,12 +140,7 @@ pub fn parse_hierarchy(xml: &str) -> Vec<Node> {
 		}
 		let clickable = attr(tag, "clickable") == "true";
 		let bounds = attr(tag, "bounds");
-		nodes.push(Node {
-			text,
-			desc,
-			clickable,
-			bounds: parse_bounds(&bounds),
-		});
+		nodes.push(Node { text, desc, clickable, bounds: parse_bounds(&bounds) });
 	}
 	nodes
 }
@@ -180,4 +177,132 @@ pub fn pick_tap_target<'a>(nodes: &'a [Node], query: &str) -> Result<&'a Node> {
 		.or_else(|| found.iter().find(|n| n.bounds.is_some()))
 		.copied()
 		.with_context(|| format!("node {query:?} has no bounds"))
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	fn node(text: &str, desc: &str, clickable: bool, bounds: Option<Bounds>) -> Node {
+		Node { text: text.into(), desc: desc.into(), clickable, bounds }
+	}
+
+	#[test]
+	fn parse_bounds_reads_uiautomator_format() {
+		assert_eq!(
+			parse_bounds("[0,108][1080,2340]"),
+			Some(Bounds { x1: 0, y1: 108, x2: 1080, y2: 2340 })
+		);
+		// Negative coordinates must not be mistaken for separators.
+		assert_eq!(parse_bounds("[-5,-5][5,5]"), Some(Bounds { x1: -5, y1: -5, x2: 5, y2: 5 }));
+	}
+
+	#[test]
+	fn parse_bounds_rejects_incomplete_or_junk() {
+		assert_eq!(parse_bounds(""), None);
+		assert_eq!(parse_bounds("[1,2]"), None); // only 2 numbers
+		assert_eq!(parse_bounds("[a,b][c,d]"), None); // not numbers
+		assert_eq!(parse_bounds("nothing here"), None);
+	}
+
+	#[test]
+	fn bounds_center_is_integer_midpoint() {
+		let b = Bounds { x1: 10, y1: 10, x2: 21, y2: 31 };
+		assert_eq!((b.cx(), b.cy()), (15, 20));
+	}
+
+	#[test]
+	fn label_prefers_text_then_desc_then_empty() {
+		assert_eq!(node("Hi", "D", true, None).label(), "Hi");
+		assert_eq!(node("", "D", true, None).label(), "D");
+		assert_eq!(node("", "", true, None).label(), "");
+	}
+
+	#[test]
+	fn matches_is_case_insensitive_and_never_matches_unlabeled() {
+		let n = node("Aperçu", "", false, None);
+		assert!(n.matches("ap"));
+		assert!(n.matches("APERÇU"));
+		assert!(!n.matches("zzz"));
+		// Empty label: no query matches (contains("") would be true).
+		assert!(!node("", "", false, None).matches(""));
+	}
+
+	#[test]
+	fn decode_entities_handles_named_and_numeric() {
+		// decode_entities is private: exercised through the module directly.
+		assert_eq!(decode_entities("a &amp; b"), "a & b");
+		assert_eq!(
+			decode_entities("&lt;tag&gt; &quot;q&quot; &apos;s&apos; &#39;t"),
+			"<tag> \"q\" 's' 't"
+		);
+		assert_eq!(decode_entities("&#x1F600;"), "😀");
+		// Unknown / unterminated entities stay literal.
+		assert_eq!(decode_entities("&bogus; &&amp;"), "&bogus; &&");
+	}
+
+	#[test]
+	fn parse_hierarchy_skips_unlabeled_and_boundsless_nodes() {
+		let xml = r#"<hierarchy rotation="0">
+<node index="0" text="" content-desc="" class="android.widget.FrameLayout" bounds="[0,0][1080,2340]">
+<node index="1" text="Bare" class="android.widget.TextView" bounds="[0,0][10,10]">
+</node>
+<node index="2" text="Clickable" content-desc="" clickable="true" bounds="[0,1][100,50]" />
+</node>
+</hierarchy>"#;
+		let nodes = parse_hierarchy(xml);
+		// The unlabeled FrameLayout is dropped; the two labeled nodes remain.
+		assert_eq!(nodes.len(), 2, "{nodes:?}");
+		assert_eq!(nodes[0].label(), "Bare");
+		assert!(!nodes[0].clickable);
+		assert_eq!(nodes[1].label(), "Clickable");
+		assert!(nodes[1].clickable);
+		assert_eq!(nodes[1].bounds, Some(Bounds { x1: 0, y1: 1, x2: 100, y2: 50 }));
+	}
+
+	#[test]
+	fn parse_hierarchy_decodes_entities_and_falls_back_to_desc() {
+		let xml = r#"<node text="Save &amp; exit" content-desc="Close &lt;X&gt;" clickable="false" bounds="[0,0][10,10]" />"#;
+		let nodes = parse_hierarchy(xml);
+		assert_eq!(nodes.len(), 1);
+		assert_eq!(nodes[0].text, "Save & exit");
+		assert_eq!(nodes[0].desc, "Close <X>");
+		// text wins over desc.
+		assert_eq!(nodes[0].label(), "Save & exit");
+	}
+
+	#[test]
+	fn find_nodes_filters_by_query() {
+		let nodes = vec![
+			node("OK", "", true, Some(Bounds { x1: 0, y1: 0, x2: 10, y2: 10 })),
+			node("Cancel", "", true, Some(Bounds { x1: 20, y1: 0, x2: 30, y2: 10 })),
+		];
+		assert_eq!(find_nodes(&nodes, "can").len(), 1);
+		assert_eq!(find_nodes(&nodes, "CAN").len(), 1);
+		assert!(find_nodes(&nodes, "nope").is_empty());
+	}
+
+	#[test]
+	fn pick_tap_target_prefers_clickable() {
+		let plain = node("Go", "", false, Some(Bounds { x1: 0, y1: 0, x2: 10, y2: 10 }));
+		let click = node("Go", "", true, Some(Bounds { x1: 50, y1: 50, x2: 60, y2: 60 }));
+		// Clickable is second in document order but must win.
+		let nodes = vec![plain.clone(), click.clone()];
+		let picked = pick_tap_target(&nodes, "Go").unwrap();
+		assert_eq!(picked.bounds, click.bounds);
+
+		// Without any clickable match, the first labeled node with bounds wins.
+		let only_plain = [plain.clone()];
+		let picked = pick_tap_target(&only_plain, "Go").unwrap();
+		assert_eq!(picked.bounds, plain.bounds);
+	}
+
+	#[test]
+	fn pick_tap_target_errors_when_nothing_found_or_no_bounds() {
+		assert!(pick_tap_target(&[], "Go").is_err());
+
+		let boundsless = node("Go", "", true, None);
+		let err = pick_tap_target(&[boundsless], "Go").unwrap_err();
+		assert!(err.to_string().contains("has no bounds"), "{err}");
+	}
 }

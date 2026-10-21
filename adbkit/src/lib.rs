@@ -23,10 +23,7 @@ pub fn pick_serial(explicit: Option<&str>) -> Result<String> {
 	match devices.len() {
 		0 => bail!("no adb device connected (or unauthorized)"),
 		1 => Ok(devices.remove(0)),
-		_ => bail!(
-			"multiple devices connected — pass --serial (found: {})",
-			devices.join(", ")
-		),
+		_ => bail!("multiple devices connected — pass --serial (found: {})", devices.join(", ")),
 	}
 }
 
@@ -84,45 +81,9 @@ impl Adb {
 
 	/// `adb shell` with a hard timeout (uiautomator dump likes to hang).
 	pub fn shell_timeout(&self, args: &[&str], timeout: Duration) -> Result<String> {
-		let mut child = self
-			.command()
-			.arg("shell")
-			.args(args)
-			.stdin(Stdio::null())
-			.stdout(Stdio::piped())
-			.stderr(Stdio::piped())
-			.spawn()
-			.with_context(|| format!("adb shell {}", args.join(" ")))?;
-		// Drain the pipes on threads: a child that writes more than the pipe
-		// buffer (~64 KiB) would block on write, never exit, and the try_wait
-		// loop below would spin until the timeout killed it.
-		let stdout = read_pipe(child.stdout.take());
-		let stderr = read_pipe(child.stderr.take());
-		let start = Instant::now();
-		let status = loop {
-			if let Some(status) = child.try_wait()? {
-				break status;
-			}
-			if start.elapsed() > timeout {
-				let _ = child.kill();
-				let _ = child.wait();
-				bail!("adb shell {} timed out after {timeout:?}", args.join(" "));
-			}
-			std::thread::sleep(Duration::from_millis(50));
-		};
-		// The child exited (or was killed): the pipes are closed and the
-		// reader threads have (or soon will) hit EOF — joining makes the
-		// captured output complete.
-		let out = stdout.join().unwrap_or_default();
-		if !status.success() {
-			let err = stderr.join().unwrap_or_default();
-			bail!(
-				"adb shell {} failed: {}",
-				args.join(" "),
-				err.trim()
-			);
-		}
-		Ok(out)
+		let mut cmd = self.command();
+		cmd.arg("shell").args(args);
+		run_with_timeout(cmd, &format!("adb shell {}", args.join(" ")), timeout)
 	}
 
 	/// `adb shell` ignoring failures.
@@ -160,7 +121,46 @@ impl Adb {
 	}
 }
 
-/// Read a piped stream to EOF on its own thread (see [`Adb::shell_timeout`]).
+/// Spawn `cmd`, kill it after `timeout`, return its stdout.
+///
+/// The pipes are drained on threads: a child that writes more than the pipe
+/// buffer (~64 KiB) would block on write, never exit, and the try_wait loop
+/// below would spin until the timeout killed it.
+///
+/// `label` is what appears in error messages (`adb shell …`).
+fn run_with_timeout(mut cmd: Command, label: &str, timeout: Duration) -> Result<String> {
+	let mut child = cmd
+		.stdin(Stdio::null())
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.spawn()
+		.with_context(|| label.to_string())?;
+	let stdout = read_pipe(child.stdout.take());
+	let stderr = read_pipe(child.stderr.take());
+	let start = Instant::now();
+	let status = loop {
+		if let Some(status) = child.try_wait()? {
+			break status;
+		}
+		if start.elapsed() > timeout {
+			let _ = child.kill();
+			let _ = child.wait();
+			bail!("{label} timed out after {timeout:?}");
+		}
+		std::thread::sleep(Duration::from_millis(50));
+	};
+	// The child exited (or was killed): the pipes are closed and the
+	// reader threads have (or soon will) hit EOF — joining makes the
+	// captured output complete.
+	let out = stdout.join().unwrap_or_default();
+	if !status.success() {
+		let err = stderr.join().unwrap_or_default();
+		bail!("{label} failed: {}", err.trim());
+	}
+	Ok(out)
+}
+
+/// Read a piped stream to EOF on its own thread (see [`run_with_timeout`]).
 fn read_pipe<T: Read + Send + 'static>(pipe: Option<T>) -> std::thread::JoinHandle<String> {
 	std::thread::spawn(move || {
 		let mut buf = Vec::new();
@@ -216,6 +216,58 @@ mod tests {
 		// Can't assert success (depends on env); just ensure it doesn't panic on parse.
 		if Command::new("adb").arg("--version").output().is_err() {
 			assert!(pick_serial(None).is_err());
+		}
+	}
+
+	// `sh`-driven tests of the timeout core: they exercise the exact code path
+	// `adb shell` uses, without needing a device (or adb) installed.
+	#[cfg(unix)]
+	mod timeout {
+		use super::*;
+
+		fn sh(script: &str) -> Command {
+			let mut c = Command::new("sh");
+			c.arg("-c").arg(script);
+			c
+		}
+
+		#[test]
+		fn large_output_does_not_deadlock() {
+			// >64 KiB (the pipe buffer): without thread draining, this child
+			// blocks on write, never exits, and hits the timeout instead.
+			let out = run_with_timeout(sh("seq 1 20000"), "seq", Duration::from_secs(10))
+				.expect("must complete, not time out");
+			assert!(out.len() > 64 * 1024, "only {} bytes", out.len());
+			assert!(out.starts_with("1\n"), "{}", &out[..20.min(out.len())]);
+			assert!(out.trim_end().ends_with("20000"));
+		}
+
+		#[test]
+		fn slow_child_is_killed_at_timeout() {
+			let start = Instant::now();
+			let err = run_with_timeout(sh("sleep 30"), "sleep", Duration::from_millis(300))
+				.expect_err("sleep must be killed");
+			assert!(err.to_string().contains("timed out"), "{err}");
+			// The kill is prompt: well under the child's own 30s.
+			assert!(start.elapsed() < Duration::from_secs(5), "{:?}", start.elapsed());
+		}
+
+		#[test]
+		fn failure_surfaces_stderr_and_exit_status() {
+			let err = run_with_timeout(sh("echo boom >&2; exit 3"), "boom", Duration::from_secs(5))
+				.expect_err("non-zero exit must fail");
+			let msg = err.to_string();
+			assert!(msg.contains("failed"), "{msg}");
+			assert!(msg.contains("boom"), "{msg}");
+		}
+
+		#[test]
+		fn missing_program_reports_spawn_error() {
+			let mut c = Command::new("/definitely/not/here");
+			c.arg("x");
+			let err = run_with_timeout(c, "spawn", Duration::from_secs(5)).expect_err("spawn");
+			// Not found at spawn time: the context label, not the exit path.
+			assert!(err.to_string().contains("spawn"), "{err}");
 		}
 	}
 }
