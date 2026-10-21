@@ -114,12 +114,30 @@ fn overlap(nodes: &[Node], out: &mut Vec<Finding>) {
 	}
 }
 
+/// Rule 3 (error): a tap target nothing identifies — clickable, but
+/// neither `text` nor `content-desc`. An id keeps the node in the model
+/// but is not rendered, so the user (and any script driven by labels) has
+/// nothing to aim at.
+fn unlabeled(nodes: &[Node], out: &mut Vec<Finding>) {
+	for n in nodes {
+		if n.self_clickable && !n.has_visible_label() {
+			out.push(Finding {
+				severity: Severity::Error,
+				rule: "unlabeled",
+				message: format!("target {:?} is clickable but has no label", n.label()),
+				bounds: n.bounds.map(|b| [b.x1, b.y1, b.x2, b.y2]),
+			});
+		}
+	}
+}
+
 /// Lint the whole hierarchy against `opts`; findings come out in rule
 /// order, then node order — a stable order CI diffs can rely on.
 pub fn lint(nodes: &[Node], opts: &Opts) -> Vec<Finding> {
 	let mut out = Vec::new();
 	touch_size(nodes, opts, &mut out);
 	overlap(nodes, &mut out);
+	unlabeled(nodes, &mut out);
 	out
 }
 
@@ -273,6 +291,34 @@ mod tests {
 		let xml = r#"<hierarchy rotation="0">
 			<node text="A" clickable="true" bounds="[0,0][1080,160]"/>
 			<node text="B" clickable="true" bounds="[0,145][1080,305]"/>
+		</hierarchy>"#;
+		let nodes = parse_hierarchy(xml);
+		assert!(lint(&nodes, &Opts { min_touch: 48, density: 160 }).is_empty());
+	}
+
+	#[test]
+	fn unlabeled_clickable_is_an_error() {
+		// The icon-only view: kept in the model by its resource-id, nothing
+		// rendered. A labelled target and a decorative icon are not flagged.
+		let xml = r#"<hierarchy rotation="0">
+			<node text="" content-desc="" resource-id="com.foo:id/mic" class="android.widget.ImageButton" clickable="true" bounds="[900,0][1080,160]"/>
+			<node text="Search" content-desc="" resource-id="com.foo:id/search" class="android.widget.Button" clickable="true" bounds="[0,0][100,160]"/>
+			<node text="" content-desc="" resource-id="com.foo:id/deco" class="android.widget.ImageView" clickable="false" bounds="[200,0][300,160]"/>
+		</hierarchy>"#;
+		let nodes = parse_hierarchy(xml);
+		let findings = lint(&nodes, &Opts { min_touch: 48, density: 160 });
+		assert_eq!(findings.len(), 1, "{findings:?}");
+		let f = &findings[0];
+		assert_eq!(f.severity, Severity::Error);
+		assert_eq!(f.rule, "unlabeled");
+		assert!(f.message.contains("com.foo:id/mic"), "{}", f.message);
+		assert_eq!(f.bounds, Some([900, 0, 1080, 160]));
+	}
+
+	#[test]
+	fn content_desc_counts_as_a_label() {
+		let xml = r#"<hierarchy rotation="0">
+			<node text="" content-desc="Close" resource-id="com.foo:id/close" clickable="true" bounds="[0,0][160,160]"/>
 		</hierarchy>"#;
 		let nodes = parse_hierarchy(xml);
 		assert!(lint(&nodes, &Opts { min_touch: 48, density: 160 }).is_empty());
