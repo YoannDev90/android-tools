@@ -134,6 +134,60 @@
       }
     },
     {
+      "id": "scenediff",
+      "name": "scenediff",
+      "path": "scenediff",
+      "version": "0.1.0",
+      "edition": "2021",
+      "language": "rust",
+      "license": "MIT",
+      "description": "Visual regression diff of two screenshots, files or device captures",
+      "long_description": "Visual regression testing from the command line: compares two screenshots pixel by pixel (files, or two live captures from a device), reports how many pixels differ, in what percentage and where (bounding box), and writes a red-marked overlay image. A --threshold percentage turns the comparison into a CI gate.",
+      "readme": "scenediff/README.md",
+      "license_file": "scenediff/LICENSE",
+      "manifest": "scenediff/Cargo.toml",
+      "entrypoint": "scenediff/src/main.rs",
+      "category": "testing",
+      "tags": [
+        "android",
+        "adb",
+        "screenshot",
+        "diff",
+        "visual-regression",
+        "testing",
+        "ci",
+        "cli"
+      ],
+      "requires": {
+        "adb": "only for --device mode: Android SDK platform-tools in PATH"
+      },
+      "features": [
+        "Compares image files, or two live screencap captures (--device)",
+        "Euclidean RGB pixel comparison: count, percentage and bounding box of what changed",
+        "Red overlay image: every differing pixel plus a two-pixel frame around the bbox",
+        "--threshold % turns the diff into a CI gate (exit 1 strictly above it)",
+        "--region x1,y1,x2,y2 crops both sides, ignoring e.g. the status bar or a clock",
+        "JSON report for machine consumers"
+      ],
+      "dependencies": {
+        "adbkit": "0.1 (path)",
+        "anyhow": "1",
+        "clap": "4",
+        "image": "0.25",
+        "serde": "1",
+        "serde_json": "1"
+      },
+      "tests": true,
+      "source": {
+        "files": [
+          "main.rs",
+          "diff.rs",
+          "output.rs"
+        ],
+        "loc": 566
+      }
+    },
+    {
       "id": "startperf",
       "name": "startperf",
       "path": "startperf",
