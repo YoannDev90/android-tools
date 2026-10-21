@@ -95,6 +95,8 @@ def generate_index(root_dir, output_path):
             "tool": "cargo",
             "release": "cargo build --release",
             "test": "cargo test --workspace",
+            "fmt": "cargo fmt --all --check",
+            "clippy": "cargo clippy --workspace --all-targets -- -D warnings",
             "binaries_dir": "target/release",
         },
         "tools": tools,

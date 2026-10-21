@@ -17,6 +17,8 @@ adb-based tools for Android development, written in Rust.
 ```bash
 cargo build --release
 cargo test --workspace
+cargo fmt --all --check
+cargo clippy --workspace --all-targets -- -D warnings
 ```
 
 ## Code generation
@@ -31,6 +33,9 @@ python3 scripts/generate_readme.py  # index.json -> README.md
 `.METADATA.toml` lives at the root of each tool directory and holds the
 tool description, tags, requirements and dependency metadata.
 
+CI (`.github/workflows/ci.yml`) runs fmt/clippy/test and fails when these
+generated files are out of date with their sources.
+
 ## Repository layout
 
 ```
@@ -40,6 +45,9 @@ tool description, tags, requirements and dependency metadata.
 ├── index.json
 ├── README.md
 ├── LICENSE
+├── rustfmt.toml
+├── .github/
+│   └── workflows
 ├── adbkit/
 │   ├── .METADATA.toml
 │   ├── Cargo.toml

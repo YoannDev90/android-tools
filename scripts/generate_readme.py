@@ -4,7 +4,7 @@
 import json
 import os
 
-ROOT_FILES = ["Cargo.toml", "Cargo.lock", "index.json", "README.md", "LICENSE"]
+ROOT_FILES = ["Cargo.toml", "Cargo.lock", "index.json", "README.md", "LICENSE", "rustfmt.toml"]
 ROOT_DIRS = ["adbkit", "logstream", "uitool", "scripts"]
 # Personal scratch notes / local tooling — not part of the generated project docs.
 EXCLUDED = {"Ideas.md", ".gitignore", ".git", "target"}
@@ -80,7 +80,12 @@ def generate_readme(root_dir, output_path):
     # Build
     lines.append("## Build")
     if "release" in build:
-        lines.append(f"```bash\n{build['release']}\n{build.get('test', '')}\n```")
+        cmds = [build["release"], build.get("test", "")]
+        if build.get("fmt"):
+            cmds.append(build["fmt"])
+        if build.get("clippy"):
+            cmds.append(build["clippy"])
+        lines.append("```bash\n" + "\n".join(c for c in cmds if c) + "\n```")
     lines.append("")
 
     # Scripts
@@ -96,6 +101,9 @@ def generate_readme(root_dir, output_path):
         "",
         "`.METADATA.toml` lives at the root of each tool directory and holds the",
         "tool description, tags, requirements and dependency metadata.",
+        "",
+        "CI (`.github/workflows/ci.yml`) runs fmt/clippy/test and fails when these",
+        "generated files are out of date with their sources.",
         "",
     ]
 

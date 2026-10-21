@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: fmt / clippy / test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --workspace
+
+  generated:
+    name: generated files up to date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Regenerate index.json and README.md
+        run: |
+          cp index.json /tmp/index.committed.json
+          python3 scripts/generate_index.py
+          python3 scripts/generate_readme.py
+      - name: README.md is generated — fail when stale
+        run: git diff --exit-code README.md
+      - name: index.json metadata — fail when stale
+        run: |
+          python3 - <<'EOF'
+          import json
+          import sys
+
+          old = json.load(open("/tmp/index.committed.json"))
+          new = json.load(open("index.json"))
+          # catalog_updated is a regeneration timestamp, not metadata.
+          old.pop("catalog_updated", None)
+          new.pop("catalog_updated", None)
+          if old != new:
+              print("index.json is stale — run: python3 scripts/generate_index.py")
+              sys.exit(1)
+          print("index.json metadata up to date")
+          EOF

@@ -5,7 +5,7 @@
   "license": "MIT",
   "language": "rust",
   "edition": "2021",
-  "catalog_updated": "2026-10-19",
+  "catalog_updated": "2026-10-21",
   "repository": {
     "type": "git",
     "root": ".",
@@ -23,6 +23,8 @@
     "tool": "cargo",
     "release": "cargo build --release",
     "test": "cargo test --workspace",
+    "fmt": "cargo fmt --all --check",
+    "clippy": "cargo clippy --workspace --all-targets -- -D warnings",
     "binaries_dir": "target/release"
   },
   "tools": [
@@ -63,7 +65,7 @@
         "files": [
           "lib.rs"
         ],
-        "loc": 221
+        "loc": 273
       }
     },
     {
@@ -123,7 +125,7 @@
           "render.rs",
           "tui.rs"
         ],
-        "loc": 2375
+        "loc": 2427
       }
     },
     {
@@ -175,7 +177,7 @@
           "ui.rs",
           "shot.rs"
         ],
-        "loc": 631
+        "loc": 829
       }
     }
   ]
