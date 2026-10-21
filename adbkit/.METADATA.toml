@@ -17,4 +17,4 @@ requires = { adb = "Android SDK platform-tools in PATH" }
 features = ["Serial auto-pick when a single device is connected", "shell_opt for commands whose failure is a normal outcome", "shell_timeout with hard kill (uiautomator dump hangs)", "exec_out for raw stdout (screencap)", "resolve_launcher: a package's launcher activity, shared by uitool and startperf", "uiautomator hierarchy parsing shared by the UI tools (roxmltree, testable without a device)"]
 dependencies = { anyhow = "1", roxmltree = "0.21" }
 tests = true
-source = { files = ["lib.rs", "hierarchy.rs"] }
+source = { files = ["lib.rs", "hierarchy.rs", "../tests/fake_adb.rs"] }

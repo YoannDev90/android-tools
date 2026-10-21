@@ -47,11 +47,22 @@ pub fn parse_devices(stdout: &str) -> Vec<String> {
 /// A handle on one device: every command goes through `-s <serial>`.
 pub struct Adb {
 	serial: String,
+	/// Which binary to run: `adb` in production, a canned script in
+	/// `tests/fake_adb.rs`.
+	program: String,
 }
 
 impl Adb {
 	pub fn new(serial: impl Into<String>) -> Self {
-		Self { serial: serial.into() }
+		Self { serial: serial.into(), program: "adb".into() }
+	}
+
+	/// Same handle, but running `program` instead of `adb`.
+	///
+	/// For a platform-tools build that is not in PATH, and for tests —
+	/// `tests/fake_adb.rs` drives the real plumbing against a shell script.
+	pub fn with_program(serial: impl Into<String>, program: impl Into<String>) -> Self {
+		Self { serial: serial.into(), program: program.into() }
 	}
 
 	pub fn serial(&self) -> &str {
@@ -59,7 +70,7 @@ impl Adb {
 	}
 
 	pub fn command(&self) -> Command {
-		let mut c = Command::new("adb");
+		let mut c = Command::new(&self.program);
 		c.args(["-s", &self.serial]);
 		c
 	}

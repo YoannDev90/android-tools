@@ -54,7 +54,8 @@ generated files are out of date with their sources.
 │   ├── Cargo.toml
 │   ├── LICENSE
 │   ├── README.md
-│   └── src
+│   ├── src
+│   └── tests
 ├── logstream/
 │   ├── .METADATA.toml
 │   ├── Cargo.toml

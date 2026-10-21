@@ -67,9 +67,10 @@
       "source": {
         "files": [
           "lib.rs",
-          "hierarchy.rs"
+          "hierarchy.rs",
+          "../tests/fake_adb.rs"
         ],
-        "loc": 721
+        "loc": 824
       }
     },
     {
