@@ -1,4 +1,5 @@
 mod adb;
+mod pick;
 mod shot;
 mod ui;
 
@@ -89,6 +90,8 @@ enum Cmd {
 		#[arg(long)]
 		wake: bool,
 	},
+	/// Color under (x, y) as #AARRGGBB (fresh screencap).
+	Pick { x: i32, y: i32 },
 	/// Launch an activity: package (resolves its launcher activity) or package/.Activity.
 	Launch {
 		/// Package name, or package/component.
@@ -228,6 +231,9 @@ fn main() -> Result<()> {
 			let opts = ShotOpts { out, crop, scale, max_dim, quality, wake };
 			let path = shot::take(&dev, &opts)?;
 			println!("{}", path.display());
+		}
+		Cmd::Pick { x, y } => {
+			println!("{}", pick::pick(&dev, x, y)?);
 		}
 		Cmd::Launch { target } => {
 			let component = if target.contains('/') {
