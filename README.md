@@ -14,6 +14,7 @@ adb-based tools for Android development, written in Rust.
 | [`resclean`](resclean/) | Dead res/ resource detector for Android projects — CI gate |
 | [`scenediff`](scenediff/) | Visual regression diff of two screenshots, files or device captures |
 | [`startperf`](startperf/) | App cold/warm start benchmark over adb |
+| [`svg2vd`](svg2vd/) | SVG → Android VectorDrawable XML converter — pure, no device, no Android SDK |
 | [`uitool`](uitool/) | Practical Android UI driver — dump, find, tap, shot over adb |
 
 ## Requirements
@@ -94,6 +95,12 @@ generated files are out of date with their sources.
 │   ├── src
 │   └── tests
 ├── scenediff/
+│   ├── .METADATA.toml
+│   ├── Cargo.toml
+│   ├── LICENSE
+│   ├── README.md
+│   └── src
+├── svg2vd/
 │   ├── .METADATA.toml
 │   ├── Cargo.toml
 │   ├── LICENSE

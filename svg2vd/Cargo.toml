@@ -1,0 +1,17 @@
+[package]
+name = "svg2vd"
+version = "0.1.0"
+edition = "2021"
+description = "SVG → Android VectorDrawable XML converter — pure, no device, no Android SDK"
+license = "MIT"
+
+[[bin]]
+name = "svg2vd"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+# No fonts (text is skipped, and system fonts would make CI output
+# depend on installed fonts), no svgz, no writer (we hand-emit XML).
+usvg = { version = "0.48", default-features = false }

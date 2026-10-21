@@ -543,6 +543,55 @@
       }
     },
     {
+      "id": "svg2vd",
+      "name": "svg2vd",
+      "path": "svg2vd",
+      "version": "0.1.0",
+      "edition": "2021",
+      "language": "rust",
+      "license": "MIT",
+      "description": "SVG → Android VectorDrawable XML converter — pure, no device, no Android SDK",
+      "long_description": "Converts an SVG into an Android VectorDrawable XML (res/drawable/*.xml), deterministically and without an Android SDK: usvg parses the document, the emitter walks the tree and hand-writes the XML. Shapes become pathData (arcs arrive as cubics), fills carry the fill-opacity folded into the #AARRGGBB alpha byte and evenOdd fillType, strokes carry color/width/cap/join/miterlimit/dashes with renderer defaults omitted, and transforms are baked into the path coordinates so rotation and skew stay representable. Clipped groups emit <clip-path android:pathData>. Anything VectorDrawable cannot express is approximated and reported, never fatal: gradients fall back to their first stop color, group opacity and patterns are warned about, text and images are skipped. The first fully pure crate of the workspace: 12 tests, no device, no adb.",
+      "readme": "svg2vd/README.md",
+      "license_file": "svg2vd/LICENSE",
+      "manifest": "svg2vd/Cargo.toml",
+      "entrypoint": "svg2vd/src/vd.rs",
+      "category": "development",
+      "tags": [
+        "android",
+        "vector-drawable",
+        "svg",
+        "xml",
+        "converter",
+        "resources",
+        "pure",
+        "offline"
+      ],
+      "requires": {},
+      "features": [
+        "Shapes to pathData: rect, circle, ellipse, line, polyline, polygon, path",
+        "Fills: solid color, fill-opacity folded into the #AARRGGBB alpha, evenOdd fillType",
+        "Strokes: color, width, cap, join, miterlimit, dasharray/offset — renderer defaults omitted",
+        "Transforms baked into the coordinates: rotation, skew and scale stay representable",
+        "clip-path: a clipped group becomes <group> with <clip-path android:pathData>",
+        "Gradients fall back to their first stop color, patterns to black — with a warning, never fatal",
+        "12 pure tests, no device: the first fully pure crate of the workspace"
+      ],
+      "dependencies": {
+        "usvg": "0.48 (default-features off)",
+        "anyhow": "1",
+        "clap": "4"
+      },
+      "tests": true,
+      "source": {
+        "files": [
+          "main.rs",
+          "vd.rs"
+        ],
+        "loc": 535
+      }
+    },
+    {
       "id": "uitool",
       "name": "uitool",
       "path": "uitool",
