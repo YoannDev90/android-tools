@@ -9,7 +9,7 @@
 
 use serde::Serialize;
 
-use adbkit::hierarchy::Node;
+use adbkit::hierarchy::{Bounds, Node};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -78,11 +78,48 @@ fn dp(px: i32, density: u32) -> f64 {
 	px as f64 * 160.0 / density as f64
 }
 
+/// Rule 2 (error): two tap targets stacked on each other — the
+/// intersection covers more than 20% of the smaller one, so a tap cannot
+/// reliably tell them apart.
+fn overlap(nodes: &[Node], out: &mut Vec<Finding>) {
+	let targets: Vec<(&Node, Bounds)> = nodes
+		.iter()
+		.filter(|n| n.self_clickable)
+		.filter_map(|n| n.bounds.map(|b| (n, b)))
+		.collect();
+	for (i, (a, ba)) in targets.iter().enumerate() {
+		for (b, bb) in &targets[i + 1..] {
+			let (x1, y1) = (ba.x1.max(bb.x1), ba.y1.max(bb.y1));
+			let (x2, y2) = (ba.x2.min(bb.x2), ba.y2.min(bb.y2));
+			if x2 <= x1 || y2 <= y1 {
+				continue; // disjoint on one axis
+			}
+			let inter = (x2 - x1) as i64 * (y2 - y1) as i64;
+			let smaller = ((ba.x2 - ba.x1) as i64 * (ba.y2 - ba.y1) as i64)
+				.min((bb.x2 - bb.x1) as i64 * (bb.y2 - bb.y1) as i64);
+			if smaller > 0 && inter * 100 > smaller * 20 {
+				out.push(Finding {
+					severity: Severity::Error,
+					rule: "overlap",
+					message: format!(
+						"targets {:?} and {:?} overlap by {:.0}% of the smaller",
+						a.label(),
+						b.label(),
+						inter as f64 * 100.0 / smaller as f64
+					),
+					bounds: Some([ba.x1, ba.y1, ba.x2, ba.y2]),
+				});
+			}
+		}
+	}
+}
+
 /// Lint the whole hierarchy against `opts`; findings come out in rule
 /// order, then node order — a stable order CI diffs can rely on.
 pub fn lint(nodes: &[Node], opts: &Opts) -> Vec<Finding> {
 	let mut out = Vec::new();
 	touch_size(nodes, opts, &mut out);
+	overlap(nodes, &mut out);
 	out
 }
 
@@ -196,6 +233,49 @@ mod tests {
 		let xml = xml.replace("132,132", "131,131");
 		let nodes = parse_hierarchy(&xml);
 		assert_eq!(lint(&nodes, &Opts { min_touch: 48, density: 440 }).len(), 1);
+	}
+
+	/// A row and an icon button stacked on it (the classic ambiguous tap
+	/// target), plus two targets that merely touch.
+	const OVERLAP: &str = r#"<hierarchy rotation="0">
+		<node index="0" text="Row" resource-id="com.foo:id/row" class="android.widget.LinearLayout" package="com.foo" clickable="true" bounds="[0,0][1080,160]"/>
+		<node index="1" text="Chevron" resource-id="com.foo:id/chevron" class="android.widget.ImageView" package="com.foo" clickable="true" bounds="[1000,0][1080,160]"/>
+		<node index="2" text="Next" resource-id="com.foo:id/next" class="android.widget.Button" package="com.foo" clickable="true" bounds="[0,160][1080,320]"/>
+		<node index="3" text="Edge" resource-id="com.foo:id/edge" class="android.widget.Button" package="com.foo" clickable="true" bounds="[0,320][540,480]"/>
+	</hierarchy>"#;
+
+	#[test]
+	fn stacked_targets_are_an_error_disjoint_ones_are_not() {
+		let nodes = parse_hierarchy(OVERLAP);
+		let opts = Opts { min_touch: 48, density: 160 };
+		let findings = lint(&nodes, &opts);
+		// Row vs Chevron overlap: the chevron (12800 px) is entirely inside
+		// the row (172800 px) = 100% of the smaller. Row vs Next and
+		// Next vs Edge merely touch — zero area.
+		assert_eq!(findings.len(), 1, "{findings:?}");
+		let f = &findings[0];
+		assert_eq!(f.severity, Severity::Error);
+		assert_eq!(f.rule, "overlap");
+		assert!(f.message.contains("\"Row\" and \"Chevron\""), "{}", f.message);
+		assert!(f.message.contains("100%"), "{}", f.message);
+	}
+
+	#[test]
+	fn overlap_below_twenty_percent_is_tolerated() {
+		// A 1080x160 row with a 1080x150 target inside: 93.75% — flagged.
+		let xml = r#"<hierarchy rotation="0">
+			<node text="A" clickable="true" bounds="[0,0][1080,160]"/>
+			<node text="B" clickable="true" bounds="[0,0][1080,150]"/>
+		</hierarchy>"#;
+		let nodes = parse_hierarchy(xml);
+		assert_eq!(lint(&nodes, &Opts { min_touch: 48, density: 160 }).len(), 1);
+		// Push B out until only 10% of it is covered: tolerated.
+		let xml = r#"<hierarchy rotation="0">
+			<node text="A" clickable="true" bounds="[0,0][1080,160]"/>
+			<node text="B" clickable="true" bounds="[0,145][1080,305]"/>
+		</hierarchy>"#;
+		let nodes = parse_hierarchy(xml);
+		assert!(lint(&nodes, &Opts { min_touch: 48, density: 160 }).is_empty());
 	}
 
 	#[test]
