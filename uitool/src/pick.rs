@@ -38,6 +38,8 @@ mod tests {
 	/// kept verbatim as the formatting fixture: alpha = round(pct ×
 	/// 255 / 100). It pins the `#AARRGGBB` slot order and the uppercase
 	/// two-digit hex against a reference every Android dev recognizes.
+	// Kept as a grid (rustfmt off) because the row shape is the table's.
+	#[rustfmt::skip]
 	const ALPHA_TABLE: &[(u8, &str)] = &[
 		(0, "00"), (5, "0D"), (10, "1A"), (15, "26"), (20, "33"), (25, "40"),
 		(30, "4D"), (35, "59"), (40, "66"), (45, "73"), (50, "80"), (55, "8C"),
