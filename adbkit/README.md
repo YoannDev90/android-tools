@@ -8,6 +8,7 @@ that own it.
 ## API
 
 - `pick_serial(explicit)` — explicit flag, or the single connected device
+- `list_serials()` — every connected device's serial (`adb devices`)
 - `parse_devices(stdout)` — device ids in state `device` (pure, testable)
 - `resolve_launcher(dev, package)` — the package's launcher activity
   (`cmd package resolve-activity --brief`)

@@ -18,16 +18,22 @@ pub fn pick_serial(explicit: Option<&str>) -> Result<String> {
 	if let Some(s) = explicit {
 		return Ok(s.to_string());
 	}
-	let out = Command::new("adb")
-		.args(["devices"])
-		.output()
-		.context("adb not found in PATH — install platform-tools")?;
-	let mut devices = parse_devices(&String::from_utf8_lossy(&out.stdout));
+	let mut devices = list_serials()?;
 	match devices.len() {
 		0 => bail!("no adb device connected (or unauthorized)"),
 		1 => Ok(devices.remove(0)),
 		_ => bail!("multiple devices connected — pass --serial (found: {})", devices.join(", ")),
 	}
+}
+
+/// Serials of every connected device in state `device` (`adb devices`)
+/// — for the tools that act on all of them at once (`appctl --all`).
+pub fn list_serials() -> Result<Vec<String>> {
+	let out = Command::new("adb")
+		.arg("devices")
+		.output()
+		.context("adb not found in PATH — install platform-tools")?;
+	Ok(parse_devices(&String::from_utf8_lossy(&out.stdout)))
 }
 
 /// Device ids in state `device` from `adb devices` stdout.
