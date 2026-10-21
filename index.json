@@ -76,6 +76,57 @@
       }
     },
     {
+      "id": "appctl",
+      "name": "appctl",
+      "path": "appctl",
+      "version": "0.1.0",
+      "edition": "2021",
+      "language": "rust",
+      "license": "MIT",
+      "description": "App lifecycle over adb — clear data/cache, restart, kill, uninstall, deep links, one or every device",
+      "long_description": "Runs the app-lifecycle actions IntelliJ's adb-idea puts behind a click, from the command line: clear data or cache (pm clear, cache-only on Android 9+), force-stop, restart (force-stop then relaunch on the launcher activity resolved at run time), uninstall, and open a deep link. Acts on one device, several -s serials, or every connected device at once (--all); one line per device, [serial] prefix when there are several, exit 1 if any failed after every device was tried. Package names and URIs are validated instead of interpolated, so shell metacharacters never reach the device shell.",
+      "readme": "appctl/README.md",
+      "license_file": "appctl/LICENSE",
+      "manifest": "appctl/Cargo.toml",
+      "entrypoint": "appctl/src/main.rs",
+      "category": "automation",
+      "tags": [
+        "android",
+        "adb",
+        "app",
+        "lifecycle",
+        "deep-link",
+        "uninstall",
+        "testing",
+        "cli",
+        "multi-device"
+      ],
+      "requires": {
+        "adb": "Android SDK platform-tools in PATH",
+        "device": "Connected device/emulator with USB debugging authorized"
+      },
+      "features": [
+        "6 actions: clear-data, clear-cache (Android 9+), kill, restart, uninstall, open deep link",
+        "--all runs on every connected device, -s is repeatable: one line per device",
+        "Restart resolves the launcher activity at run time (no hardcoded .MainActivity)",
+        "Package names and URIs validated, never interpolated into the device shell",
+        "Exit 1 if any device failed, after every device was tried"
+      ],
+      "dependencies": {
+        "adbkit": "0.1 (path)",
+        "anyhow": "1",
+        "clap": "4"
+      },
+      "tests": true,
+      "source": {
+        "files": [
+          "main.rs",
+          "cmds.rs"
+        ],
+        "loc": 278
+      }
+    },
+    {
       "id": "dpx",
       "name": "dpx",
       "path": "dpx",
