@@ -1,0 +1,20 @@
+[package]
+name = "perfpoll"
+version = "0.1.0"
+edition = "2021"
+description = "Per-app performance sampler over adb — CPU, RAM, battery drain, fps to CSV/JSON"
+license = "MIT"
+
+[metadata]
+long_description = "Polls one or more Android apps on a fixed interval over adb and streams one row per app per tick: CPU share (/proc/stat + /proc/pid/stat deltas), RAM (dumpsys meminfo PSS), battery (global level plus per-app cumulative mAh deltas from dumpsys batterystats) and frame stats (dumpsys gfxinfo Total/Janky deltas over real elapsed time). Writes CSV as it goes (safe to Ctrl+C) or one JSON document with per-app summaries at the end."
+readme = "perfpoll/README.md"
+license_file = "perfpoll/LICENSE"
+manifest = "perfpoll/Cargo.toml"
+entrypoint = "perfpoll/src/main.rs"
+category = "monitoring"
+tags = ["android", "performance", "battery", "fps", "profiling", "adb", "cli"]
+requires = {}
+features = ["Multi-package sampling: -p repeatable, one CSV series with an app column", "CPU% from /proc deltas across all of an app's pids, clamped to 0..100", "RAM as the sum of per-process PSS TOTAL rows of dumpsys meminfo", "Battery as global level plus per-app mAh deltas (UID / uid / package spellings)", "FPS and janky-frame rate from gfxinfo counter deltas over actual elapsed time", "Streamed CSV flushed per row (Ctrl+C-safe) or one pretty JSON document with summaries"]
+dependencies = { adbkit = "path", anyhow = "1", clap = "4", serde = "1", serde_json = "1" }
+tests = true
+source = { files = ["main.rs", "parse.rs", "output.rs"] }

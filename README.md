@@ -8,6 +8,7 @@ adb-based tools for Android development, written in Rust.
 | [`dpx`](dpx/) | px ↔ dp ↔ sp converter — offline, or against the device's real density |
 | [`layoutlint`](layoutlint/) | UI hierarchy lint — touch targets, overlap, labels, from a uiautomator dump |
 | [`logstream`](logstream/) | Live Android log streamer - logcat, but actually nice |
+| [`perfpoll`](perfpoll/) | Per-app performance sampler over adb — CPU, RAM, battery drain, fps to CSV/JSON |
 | [`resclean`](resclean/) | Dead res/ resource detector for Android projects — CI gate |
 | [`scenediff`](scenediff/) | Visual regression diff of two screenshots, files or device captures |
 | [`startperf`](startperf/) | App cold/warm start benchmark over adb |
@@ -60,6 +61,12 @@ generated files are out of date with their sources.
 │   ├── README.md
 │   └── src
 ├── layoutlint/
+│   ├── .METADATA.toml
+│   ├── Cargo.toml
+│   ├── LICENSE
+│   ├── README.md
+│   └── src
+├── perfpoll/
 │   ├── .METADATA.toml
 │   ├── Cargo.toml
 │   ├── LICENSE

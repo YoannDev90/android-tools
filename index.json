@@ -37,7 +37,7 @@
       "language": "rust",
       "license": "MIT",
       "description": "Shared adb helpers for the android-tools workspace",
-      "long_description": "Library crate with device picking, shell/exec-out wrappers with timeouts, the uiautomator hierarchy model (XML to flat nodes, via roxmltree), density parsing (wm density) and pure helpers. Tool-specific behaviour stays in the tools that own it.",
+      "long_description": "Library crate with device picking and listing, shell/exec-out wrappers with timeouts, the uiautomator hierarchy model (XML to flat nodes, via roxmltree), density parsing (wm density) and pure helpers. Tool-specific behaviour stays in the tools that own it.",
       "readme": "adbkit/README.md",
       "license_file": "adbkit/LICENSE",
       "manifest": "adbkit/Cargo.toml",
@@ -53,10 +53,11 @@
       },
       "features": [
         "Serial auto-pick when a single device is connected",
+        "list_serials for tools that act on every connected device",
         "shell_opt for commands whose failure is a normal outcome",
         "shell_timeout with hard kill (uiautomator dump hangs)",
         "exec_out for raw stdout (screencap)",
-        "resolve_launcher: a package's launcher activity, shared by uitool and startperf",
+        "resolve_launcher: a package's launcher activity, shared by uitool, startperf and appctl",
         "uiautomator hierarchy parsing shared by the UI tools (roxmltree, testable without a device)",
         "wm density parsing for px↔dp conversion (override wins over physical)"
       ],
@@ -71,7 +72,7 @@
           "hierarchy.rs",
           "../tests/fake_adb.rs"
         ],
-        "loc": 864
+        "loc": 870
       }
     },
     {
@@ -233,6 +234,56 @@
           "tui.rs"
         ],
         "loc": 2427
+      }
+    },
+    {
+      "id": "perfpoll",
+      "name": "perfpoll",
+      "path": "perfpoll",
+      "version": "0.1.0",
+      "edition": "2021",
+      "language": "rust",
+      "license": "MIT",
+      "description": "Per-app performance sampler over adb — CPU, RAM, battery drain, fps to CSV/JSON",
+      "long_description": "Polls one or more Android apps on a fixed interval over adb and streams one row per app per tick: CPU share (/proc/stat + /proc/pid/stat deltas), RAM (dumpsys meminfo PSS), battery (global level plus per-app cumulative mAh deltas from dumpsys batterystats) and frame stats (dumpsys gfxinfo Total/Janky deltas over real elapsed time). Writes CSV as it goes (safe to Ctrl+C) or one JSON document with per-app summaries at the end.",
+      "readme": "perfpoll/README.md",
+      "license_file": "perfpoll/LICENSE",
+      "manifest": "perfpoll/Cargo.toml",
+      "entrypoint": "perfpoll/src/main.rs",
+      "category": "monitoring",
+      "tags": [
+        "android",
+        "performance",
+        "battery",
+        "fps",
+        "profiling",
+        "adb",
+        "cli"
+      ],
+      "requires": {},
+      "features": [
+        "Multi-package sampling: -p repeatable, one CSV series with an app column",
+        "CPU% from /proc deltas across all of an app's pids, clamped to 0..100",
+        "RAM as the sum of per-process PSS TOTAL rows of dumpsys meminfo",
+        "Battery as global level plus per-app mAh deltas (UID / uid / package spellings)",
+        "FPS and janky-frame rate from gfxinfo counter deltas over actual elapsed time",
+        "Streamed CSV flushed per row (Ctrl+C-safe) or one pretty JSON document with summaries"
+      ],
+      "dependencies": {
+        "adbkit": "path",
+        "anyhow": "1",
+        "clap": "4",
+        "serde": "1",
+        "serde_json": "1"
+      },
+      "tests": true,
+      "source": {
+        "files": [
+          "main.rs",
+          "parse.rs",
+          "output.rs"
+        ],
+        "loc": 768
       }
     },
     {
