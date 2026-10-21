@@ -1,0 +1,20 @@
+[package]
+name = "resclean"
+version = "0.1.0"
+edition = "2021"
+description = "Dead res/ resource detector for Android projects — CI gate"
+license = "MIT"
+
+[metadata]
+long_description = "Finds resources an Android project defines but never uses: walks res/ files and values entries, cross-references them against layouts, menus, manifests, other res/ XML and Kotlin/Java code (R.* / R2.*), and reports the dead ones as text or JSON. Pure source scan — no device, no aapt, no Gradle — with an exit-1 CI gate and --keep patterns for dynamically reached (getIdentifier) resources."
+readme = "resclean/README.md"
+license_file = "resclean/LICENSE"
+manifest = "resclean/Cargo.toml"
+entrypoint = "resclean/src/main.rs"
+category = "testing"
+tags = ["android", "resources", "dead-code", "cleanup", "lint", "ci", "cli"]
+requires = {}
+features = ["Scans res/ files and values/*.xml for definitions; layouts, menus, manifests, res/ XML and R.*/R2.* code for references", "Qualifier- and .9.png-normalized keys; @+id/ defines an id (unused ids are reported), @id/ and R.id. reference one", "Style names matched across code and XML (R.style.Theme_X = @style/Theme.X)", "tools: preview attributes count as used; attr never reported; getIdentifier() handled via --keep patterns", "Text and JSON reports; exit 1 on any dead resource for CI, --warn-only to opt out"]
+dependencies = { anyhow = "1", clap = "4", regex = "1", roxmltree = "0.21", serde = "1", serde_json = "1" }
+tests = true
+source = { files = ["main.rs", "scan.rs"] }

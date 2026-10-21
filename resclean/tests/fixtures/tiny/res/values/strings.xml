@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">Tiny</string>
+	<string name="hello">Hello</string>
+	<string name="unused">Nobody references me</string>
+	<color name="brand">#FF0000</color>
+	<style name="AppTheme" parent="Theme.MaterialComponents.DayNight" />
+</resources>

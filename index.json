@@ -37,7 +37,7 @@
       "language": "rust",
       "license": "MIT",
       "description": "Shared adb helpers for the android-tools workspace",
-      "long_description": "Library crate with device picking, shell/exec-out wrappers with timeouts, the uiautomator hierarchy model (XML to flat nodes, via roxmltree), and pure helpers. Tool-specific behaviour stays in the tools that own it.",
+      "long_description": "Library crate with device picking, shell/exec-out wrappers with timeouts, the uiautomator hierarchy model (XML to flat nodes, via roxmltree), density parsing (wm density) and pure helpers. Tool-specific behaviour stays in the tools that own it.",
       "readme": "adbkit/README.md",
       "license_file": "adbkit/LICENSE",
       "manifest": "adbkit/Cargo.toml",
@@ -57,7 +57,8 @@
         "shell_timeout with hard kill (uiautomator dump hangs)",
         "exec_out for raw stdout (screencap)",
         "resolve_launcher: a package's launcher activity, shared by uitool and startperf",
-        "uiautomator hierarchy parsing shared by the UI tools (roxmltree, testable without a device)"
+        "uiautomator hierarchy parsing shared by the UI tools (roxmltree, testable without a device)",
+        "wm density parsing for px↔dp conversion (override wins over physical)"
       ],
       "dependencies": {
         "anyhow": "1",
@@ -70,7 +71,55 @@
           "hierarchy.rs",
           "../tests/fake_adb.rs"
         ],
-        "loc": 824
+        "loc": 864
+      }
+    },
+    {
+      "id": "dpx",
+      "name": "dpx",
+      "path": "dpx",
+      "version": "0.1.0",
+      "edition": "2021",
+      "language": "rust",
+      "license": "MIT",
+      "description": "px ↔ dp ↔ sp converter — offline, or against the device's real density",
+      "long_description": "Converts Android dimensions between px, dp and sp from the command line. Offline by default (any density value works, mdpi 160 dpi as the baseline), or --device reads the real density from the connected device via wm density, override winning over physical — that is what the UI actually draws at. Takes several values at once, one result per line, and honours a custom font scale for sp.",
+      "readme": "dpx/README.md",
+      "license_file": "dpx/LICENSE",
+      "manifest": "dpx/Cargo.toml",
+      "entrypoint": "dpx/src/main.rs",
+      "category": "development",
+      "tags": [
+        "android",
+        "dp",
+        "px",
+        "sp",
+        "density",
+        "converter",
+        "typography",
+        "cli"
+      ],
+      "requires": {
+        "adb": "only for --device mode: Android SDK platform-tools in PATH"
+      },
+      "features": [
+        "px ↔ dp ↔ sp in any direction (px = dp × density / 160, sp scales with the font scale)",
+        "--device reads the real density from wm density (override wins over physical)",
+        "Several values per call, one result per line",
+        "Pure conversion core, fully tested without a device"
+      ],
+      "dependencies": {
+        "adbkit": "0.1 (path)",
+        "anyhow": "1",
+        "clap": "4"
+      },
+      "tests": true,
+      "source": {
+        "files": [
+          "main.rs",
+          "convert.rs"
+        ],
+        "loc": 212
       }
     },
     {
@@ -184,6 +233,55 @@
           "tui.rs"
         ],
         "loc": 2427
+      }
+    },
+    {
+      "id": "resclean",
+      "name": "resclean",
+      "path": "resclean",
+      "version": "0.1.0",
+      "edition": "2021",
+      "language": "rust",
+      "license": "MIT",
+      "description": "Dead res/ resource detector for Android projects — CI gate",
+      "long_description": "Finds resources an Android project defines but never uses: walks res/ files and values entries, cross-references them against layouts, menus, manifests, other res/ XML and Kotlin/Java code (R.* / R2.*), and reports the dead ones as text or JSON. Pure source scan — no device, no aapt, no Gradle — with an exit-1 CI gate and --keep patterns for dynamically reached (getIdentifier) resources.",
+      "readme": "resclean/README.md",
+      "license_file": "resclean/LICENSE",
+      "manifest": "resclean/Cargo.toml",
+      "entrypoint": "resclean/src/main.rs",
+      "category": "testing",
+      "tags": [
+        "android",
+        "resources",
+        "dead-code",
+        "cleanup",
+        "lint",
+        "ci",
+        "cli"
+      ],
+      "requires": {},
+      "features": [
+        "Scans res/ files and values/*.xml for definitions; layouts, menus, manifests, res/ XML and R.*/R2.* code for references",
+        "Qualifier- and .9.png-normalized keys; @+id/ defines an id (unused ids are reported), @id/ and R.id. reference one",
+        "Style names matched across code and XML (R.style.Theme_X = @style/Theme.X)",
+        "tools: preview attributes count as used; attr never reported; getIdentifier() handled via --keep patterns",
+        "Text and JSON reports; exit 1 on any dead resource for CI, --warn-only to opt out"
+      ],
+      "dependencies": {
+        "anyhow": "1",
+        "clap": "4",
+        "regex": "1",
+        "roxmltree": "0.21",
+        "serde": "1",
+        "serde_json": "1"
+      },
+      "tests": true,
+      "source": {
+        "files": [
+          "main.rs",
+          "scan.rs"
+        ],
+        "loc": 500
       }
     },
     {
@@ -303,7 +401,7 @@
       "language": "rust",
       "license": "MIT",
       "description": "Practical Android UI driver — dump, find, tap, shot over adb",
-      "long_description": "Drives a device UI from the command line: dumps the uiautomator hierarchy as labeled lines, finds/waits for nodes by text or content-desc, taps by label or coordinates, swipes, takes cropped/scaled screenshots, launches activities, sends keys and text.",
+      "long_description": "Drives a device UI from the command line: dumps the uiautomator hierarchy as labeled lines, finds/waits for nodes by text or content-desc, taps by label or coordinates, swipes, takes cropped/scaled screenshots, picks the color under any point, launches activities, sends keys and text.",
       "readme": "uitool/README.md",
       "license_file": "uitool/LICENSE",
       "manifest": "uitool/Cargo.toml",
@@ -327,6 +425,7 @@
         "Clickable nodes preferred as tap target, bounds center computed automatically",
         "uiautomator dump with hard timeout (no hangs) and screen-off detection",
         "Screenshot pipeline: crop, nearest upscale, max-dim resize, JPEG quality",
+        "Color picker at any point (uitool pick x y → #AARRGGBB)",
         "Serial auto-pick when exactly one device is connected (via adbkit)"
       ],
       "dependencies": {
@@ -341,9 +440,10 @@
           "main.rs",
           "adb.rs",
           "ui.rs",
-          "shot.rs"
+          "shot.rs",
+          "pick.rs"
         ],
-        "loc": 700
+        "loc": 785
       }
     }
   ]
