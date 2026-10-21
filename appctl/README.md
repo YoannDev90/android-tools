@@ -14,8 +14,6 @@ device.
 
 - `adb` (Android SDK platform-tools) in `PATH`
 - A connected device/emulator with USB debugging authorized
-- `clear-cache` needs Android 9+ (API 28); every other action works
-  everywhere
 
 ## Install
 
@@ -30,9 +28,10 @@ cargo install --path appctl
 ```bash
 appctl kill com.example.app               # force-stop (not running = OK)
 appctl clear-data com.example.app         # pm clear: data + cache
-appctl clear-cache com.example.app        # cache only, Android 9+
+appctl clear-cache com.example.app        # pm trim-caches 0
 appctl restart com.example.app            # force-stop + relaunch, launcher resolved
 appctl uninstall com.example.app          # pm uninstall
+appctl settings com.example.app           # open App info in Settings
 appctl open 'myapp://detail/7'            # am start -a VIEW -d
 
 appctl --all kill com.example.app         # every connected device
@@ -42,10 +41,11 @@ appctl -s SERIAL1 -s SERIAL2 restart com.example.app
 | Subcommand | Device command | Notes |
 |------------|----------------|-------|
 | `clear-data <pkg>` | `pm clear <pkg>` | wipes data **and** cache |
-| `clear-cache <pkg>` | `pm clear --cache-only <pkg>` | Android 9+ |
+| `clear-cache <pkg>` | `pm trim-caches 0 <pkg>` | the Storage "clear cached data" path |
 | `kill <pkg>` | `am force-stop <pkg>` | not running is a success |
 | `restart <pkg>` | `force-stop` + `am start -n <launcher>` | launcher resolved at run time |
 | `uninstall <pkg>` | `pm uninstall <pkg>` | permanent, no `-k`/`--user` |
+| `settings <pkg>` | `am start -a APPLICATION_DETAILS_SETTINGS -d package:<pkg>` | App info page |
 | `open <uri>` | `am start -a VIEW -d '<uri>'` | URI single-quoted for the device shell |
 
 Output is one line per device; with several devices each line is
@@ -63,6 +63,16 @@ device failed, 0 only when all succeeded.
   declares, not a hardcoded `.MainActivity`.
 - `kill` on an app that is not running succeeds: `am force-stop` is
   idempotent, which is what makes it usable as a test fixture teardown.
+- `clear-cache` goes through `pm trim-caches 0 <pkg>` — the same
+  PackageManager cache deletion Settings → Storage → "clear cached data"
+  does (SD Maid makes the same call, through Shizuku). The
+  `pm clear --cache-only` flag stalls outright on some builds (seen on
+  HyperOS/MIUI: no dialog appears, focus never leaves the launcher), so
+  it is not used.
+- Every device command has a 10s deadline: a stalled `adb shell`
+  becomes an error on that device, never a CLI that never returns.
+- `settings` opens the App info page — the manual route to the cache
+  button, and what accessibility automation drives on-device.
 
 ## Development
 

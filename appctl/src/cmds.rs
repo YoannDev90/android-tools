@@ -18,6 +18,7 @@ pub enum Action {
 	Kill,
 	Restart,
 	Uninstall,
+	Settings,
 	Open,
 }
 
@@ -32,9 +33,15 @@ pub fn argv(action: Action, arg: &str) -> Result<Vec<String>> {
 			check_package(arg)?;
 			v(&["pm", "clear", arg])
 		}
+		// pm clear --cache-only stalls outright on some builds (seen on
+		// HyperOS/MIUI: no dialog, focus never leaves the launcher) —
+		// pm trim-caches is the same PackageManager cache deletion the
+		// Settings > Storage "clear cached data" path uses, and it
+		// returns. It is what SD Maid reaches through Shizuku
+		// (deleteApplicationCacheFiles), over plain shell.
 		Action::ClearCache => {
 			check_package(arg)?;
-			v(&["pm", "clear", "--cache-only", arg])
+			v(&["pm", "trim-caches", "0", arg])
 		}
 		// force-stop is idempotent: a not-running app is a success, so
 		// kill and the stop half of restart share the command.
@@ -45,6 +52,13 @@ pub fn argv(action: Action, arg: &str) -> Result<Vec<String>> {
 		Action::Uninstall => {
 			check_package(arg)?;
 			v(&["pm", "uninstall", arg])
+		}
+		// The App info page — where Settings (and any accessibility
+		// automation, SD Maid style) clears the cache by hand.
+		Action::Settings => {
+			check_package(arg)?;
+			let data = format!("package:{arg}");
+			v(&["am", "start", "-a", "android.settings.APPLICATION_DETAILS_SETTINGS", "-d", &data])
 		}
 		Action::Open => {
 			let uri = quoted_uri(arg)?;
@@ -98,12 +112,20 @@ mod tests {
 	#[test]
 	fn argv_maps_every_action() {
 		assert_eq!(argv(Action::ClearData, "com.x").unwrap(), ["pm", "clear", "com.x"]);
-		assert_eq!(
-			argv(Action::ClearCache, "com.x").unwrap(),
-			["pm", "clear", "--cache-only", "com.x"]
-		);
+		assert_eq!(argv(Action::ClearCache, "com.x").unwrap(), ["pm", "trim-caches", "0", "com.x"]);
 		assert_eq!(argv(Action::Kill, "com.x").unwrap(), ["am", "force-stop", "com.x"]);
 		assert_eq!(argv(Action::Uninstall, "com.x").unwrap(), ["pm", "uninstall", "com.x"]);
+		assert_eq!(
+			argv(Action::Settings, "com.x").unwrap(),
+			[
+				"am",
+				"start",
+				"-a",
+				"android.settings.APPLICATION_DETAILS_SETTINGS",
+				"-d",
+				"package:com.x"
+			]
+		);
 		assert_eq!(
 			argv(Action::Open, "myapp://detail/7").unwrap(),
 			["am", "start", "-a", "android.intent.action.VIEW", "-d", "'myapp://detail/7'"]

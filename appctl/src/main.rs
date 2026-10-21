@@ -3,12 +3,19 @@
 
 mod cmds;
 
+use std::time::Duration;
+
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
 
 use adbkit::{list_serials, pick_serial, resolve_launcher, Adb};
 
 use cmds::{argv, line, start_argv, Action};
+
+/// Every device command gets a deadline: `pm clear --cache-only` stalls
+/// outright on some builds (seen on API 35) — better an error than a
+/// CLI that never returns.
+const SHELL_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Parser, Debug)]
 #[command(
@@ -33,7 +40,7 @@ struct Cli {
 enum Cmd {
 	/// Clear the app's data and cache (`pm clear`).
 	ClearData { package: String },
-	/// Clear only the app's cache (`pm clear --cache-only`, Android 9+).
+	/// Clear only the app's cache (`pm trim-caches 0`).
 	ClearCache { package: String },
 	/// Force-stop the app (not running is a success, not an error).
 	Kill { package: String },
@@ -41,6 +48,9 @@ enum Cmd {
 	Restart { package: String },
 	/// Uninstall the package.
 	Uninstall { package: String },
+	/// Open the app's page in Settings — App info, where the cache can
+	/// also be cleared by hand.
+	Settings { package: String },
 	/// Open a deep link (`am start -a VIEW -d <uri>`).
 	Open { uri: String },
 }
@@ -53,6 +63,7 @@ impl Cmd {
 			Cmd::Kill { .. } => Action::Kill,
 			Cmd::Restart { .. } => Action::Restart,
 			Cmd::Uninstall { .. } => Action::Uninstall,
+			Cmd::Settings { .. } => Action::Settings,
 			Cmd::Open { .. } => Action::Open,
 		}
 	}
@@ -63,7 +74,8 @@ impl Cmd {
 			| Cmd::ClearCache { package }
 			| Cmd::Kill { package }
 			| Cmd::Restart { package }
-			| Cmd::Uninstall { package } => package,
+			| Cmd::Uninstall { package }
+			| Cmd::Settings { package } => package,
 			Cmd::Open { uri } => uri,
 		}
 	}
@@ -112,21 +124,22 @@ fn one(dev: &Adb, cmd: &Cmd) -> Result<String> {
 	if action == Action::Restart {
 		// force-stop first — idempotent, a not-running app is a success.
 		let stop_argv = argv(Action::Kill, arg)?;
-		dev.shell(&refs(&stop_argv)).context("force-stop")?;
+		dev.shell_timeout(&refs(&stop_argv), SHELL_TIMEOUT).context("force-stop")?;
 		// The launcher is resolved now, not hardcoded: it is whatever
 		// this build declares, and it changes between versions.
 		let component = resolve_launcher(dev, arg)?;
 		let start_args = start_argv(&component);
-		dev.shell(&refs(&start_args)).context("am start")?;
+		dev.shell_timeout(&refs(&start_args), SHELL_TIMEOUT).context("am start")?;
 		return Ok(format!("restarted as {component}"));
 	}
 	let args = argv(action, arg)?;
-	dev.shell(&refs(&args))?;
+	dev.shell_timeout(&refs(&args), SHELL_TIMEOUT)?;
 	Ok(match action {
 		Action::ClearData => "data cleared".into(),
 		Action::ClearCache => "cache cleared".into(),
 		Action::Kill => "stopped".into(),
 		Action::Uninstall => "uninstalled".into(),
+		Action::Settings => "app info opened".into(),
 		Action::Open => format!("opened {arg}"),
 		Action::Restart => unreachable!(),
 	})
