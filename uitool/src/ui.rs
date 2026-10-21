@@ -24,17 +24,35 @@ impl Bounds {
 pub struct Node {
 	pub text: String,
 	pub desc: String,
+	/// `resource-id`, e.g. `com.foo:id/send`. Not rendered by the app, but the
+	/// only thing an icon-only view exposes — without it such a node is
+	/// unreachable by `uitool tap`.
+	pub id: String,
 	pub clickable: bool,
 	pub bounds: Option<Bounds>,
 }
 
 impl Node {
+	/// What `find` matches and `dump` prints: the text, else the description,
+	/// else the resource-id.
 	pub fn label(&self) -> &str {
 		if !self.text.is_empty() {
 			&self.text
-		} else {
+		} else if !self.desc.is_empty() {
 			&self.desc
+		} else {
+			&self.id
 		}
+	}
+
+	/// Whether a human can read this node, i.e. it has a `text` or a
+	/// `content-desc` — deliberately *not* counting `resource-id`.
+	///
+	/// This is what tells "nothing on this screen" from "screen off": the
+	/// keyguard exposes ids only, so a screen whose every node lacks a
+	/// visible label is the locked/off case.
+	pub fn has_visible_label(&self) -> bool {
+		!self.text.is_empty() || !self.desc.is_empty()
 	}
 
 	pub fn matches(&self, query: &str) -> bool {
@@ -135,28 +153,40 @@ pub fn parse_hierarchy(xml: &str) -> Vec<Node> {
 		}
 		let text = attr(tag, "text");
 		let desc = attr(tag, "content-desc");
-		if text.is_empty() && desc.is_empty() {
+		let id = attr(tag, "resource-id");
+		// A node with only a resource-id is still worth keeping: that is the
+		// sole handle icon-only views offer.
+		if text.is_empty() && desc.is_empty() && id.is_empty() {
 			continue;
 		}
 		let clickable = attr(tag, "clickable") == "true";
 		let bounds = attr(tag, "bounds");
-		nodes.push(Node { text, desc, clickable, bounds: parse_bounds(&bounds) });
+		nodes.push(Node { text, desc, id, clickable, bounds: parse_bounds(&bounds) });
 	}
 	nodes
 }
 
-/// [`parse_hierarchy`], but refusing the case where a hierarchy was produced
-/// yet carries no label at all.
+/// [`parse_hierarchy`], but refusing a hierarchy in which no node carries
+/// something a human can read.
 ///
 /// That is exactly what `uiautomator dump` answers when the screen is off or
-/// locked: it dumps the keyguard, whose nodes have a `resource-id` but no
+/// locked: it dumps the keyguard, whose nodes expose a `resource-id` but no
 /// `text`/`content-desc`. Left unchecked, `uitool dump` printed nothing and
 /// exited 0, and `find` reported "no node matching" while the real cause was
 /// the screen state.
+///
+/// Nodes holding only a [`Node::id`] do not count: they are legitimate on an
+/// icon-only screen, and requiring a *visible* label keeps this test working
+/// once ids became addressable.
+///
+/// Consequence, by design: a screen whose every node is icon-only is refused
+/// too. `uitool` drives the UI through labels, so such a screen offers it
+/// nothing to act on either way; the common case — icon-only nodes *within* a
+/// screen that has text — keeps working.
 pub fn parse_hierarchy_checked(xml: &str) -> Result<Vec<Node>> {
 	let nodes = parse_hierarchy(xml);
-	if nodes.is_empty() {
-		bail!("no labeled node in the hierarchy — screen off or locked? (`uitool wake`)");
+	if !nodes.iter().any(Node::has_visible_label) {
+		bail!("no readable node in the hierarchy — screen off or locked? (`uitool wake`)");
 	}
 	Ok(nodes)
 }
@@ -200,7 +230,12 @@ mod tests {
 	use super::*;
 
 	fn node(text: &str, desc: &str, clickable: bool, bounds: Option<Bounds>) -> Node {
-		Node { text: text.into(), desc: desc.into(), clickable, bounds }
+		Node { text: text.into(), desc: desc.into(), id: String::new(), clickable, bounds }
+	}
+
+	/// Same, with a `resource-id` — what an icon-only view exposes.
+	fn with_id(text: &str, desc: &str, id: &str, clickable: bool, bounds: Option<Bounds>) -> Node {
+		Node { text: text.into(), desc: desc.into(), id: id.into(), clickable, bounds }
 	}
 
 	#[test]
@@ -328,14 +363,13 @@ mod tests {
 	const KEYGUARD: &str = r#"<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><hierarchy rotation="0"><node index="0" text="" resource-id="com.android.systemui:id/legacy_window_root" class="android.widget.FrameLayout" package="com.android.systemui" content-desc="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,0][1080,2400]"><node index="0" text="" resource-id="com.android.systemui:id/scrim_behind" class="android.view.View" content-desc="" clickable="false" bounds="[0,0][1080,2400]" /><node index="1" text="" resource-id="com.android.systemui:id/keyguard_root_view" class="android.view.ViewGroup" content-desc="" clickable="false" bounds="[0,0][1080,2400]"><node index="0" text="" resource-id="com.android.systemui:id/keyguard_message_area_container" class="android.widget.LinearLayout" content-desc="" clickable="false" bounds="[0,94][1080,2400]" /></node></node></hierarchy>"#;
 
 	#[test]
-	fn keyguard_hierarchy_parses_to_nothing() {
-		// Documents why the plain parser cannot tell "nothing to act on" apart
-		// from "screen off": the XML is well-formed and full of nodes.
-		assert!(parse_hierarchy(KEYGUARD).is_empty());
-	}
-
-	#[test]
-	fn checked_parser_rejects_a_screen_off_hierarchy() {
+	fn keyguard_nodes_survive_parsing_but_are_rejected_by_the_guard() {
+		// The keyguard is well-formed and full of nodes — each with a
+		// resource-id and nothing a human can read. Ids alone must not let it
+		// pass as a usable screen.
+		let raw = parse_hierarchy(KEYGUARD);
+		assert!(!raw.is_empty(), "the keyguard does expose nodes, by id");
+		assert!(raw.iter().all(|n| !n.has_visible_label()));
 		let err = parse_hierarchy_checked(KEYGUARD).unwrap_err();
 		assert!(err.to_string().contains("screen off"), "{err}");
 		assert!(err.to_string().contains("uitool wake"), "{err}");
@@ -347,5 +381,56 @@ mod tests {
 		let nodes = parse_hierarchy_checked(xml).unwrap();
 		assert_eq!(nodes.len(), 1);
 		assert_eq!(nodes[0].label(), "Wi-Fi");
+	}
+
+	#[test]
+	fn checked_parser_rejects_an_all_icon_screen() {
+		// Documented limitation: `uitool` acts on labels, so a hierarchy whose
+		// every node is icon-only is refused like a locked screen. The useful
+		// case — icon-only nodes living on a screen that *does* have text, as
+		// on Settings — is covered by `id_only_nodes_are_kept_on_a_text_screen`.
+		let xml = r#"<hierarchy rotation="0"><node index="0" text="" content-desc="" resource-id="com.foo:id/send" clickable="true" bounds="[0,0][10,10]" /></hierarchy>"#;
+		let err = parse_hierarchy_checked(xml).unwrap_err();
+		assert!(err.to_string().contains("screen off"), "{err}");
+	}
+
+	#[test]
+	fn id_only_nodes_are_kept_on_a_text_screen() {
+		// The 61 such nodes counted on a real Settings screen: icon-only views
+		// that were completely unreachable before ids were parsed, while the
+		// screen itself stays usable thanks to its labeled rows.
+		let xml = r#"<hierarchy rotation="0"><node index="0" text="Wi-Fi" clickable="false" bounds="[0,0][10,10]" /><node index="1" text="" content-desc="" resource-id="com.foo:id/search_action" clickable="true" bounds="[20,20][60,60]" /></hierarchy>"#;
+		let nodes = parse_hierarchy_checked(xml).unwrap();
+		assert_eq!(nodes.len(), 2);
+		// Addressable now, where before only the labeled row was.
+		assert!(nodes.iter().any(|n| n.matches("search_action")));
+	}
+
+	#[test]
+	fn id_only_node_is_kept_and_addressable() {
+		// Before ids were parsed, an icon-only clickable view was invisible to
+		// `find`/`tap` — 61 such nodes on a real Settings screen.
+		let xml = r#"<node index="0" text="" content-desc="" resource-id="com.foo:id/send" clickable="true" bounds="[0,0][10,10]" />"#;
+		let nodes = parse_hierarchy(xml);
+		assert_eq!(nodes.len(), 1, "{nodes:?}");
+		assert_eq!(nodes[0].id, "com.foo:id/send");
+		// The id is the last-resort label, so it becomes searchable.
+		assert_eq!(nodes[0].label(), "com.foo:id/send");
+		assert!(nodes[0].matches("send"));
+	}
+
+	#[test]
+	fn text_wins_then_desc_then_id() {
+		let both = with_id("Save", "Save changes", "com.foo:id/save", false, None);
+		assert_eq!(both.label(), "Save");
+		assert!(both.has_visible_label());
+
+		let desc_only = with_id("", "Close", "com.foo:id/close", false, None);
+		assert_eq!(desc_only.label(), "Close");
+		assert!(desc_only.has_visible_label());
+
+		let id_only = with_id("", "", "com.foo:id/icon", false, None);
+		assert_eq!(id_only.label(), "com.foo:id/icon");
+		assert!(!id_only.has_visible_label());
 	}
 }
