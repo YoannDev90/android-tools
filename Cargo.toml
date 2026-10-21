@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["adbkit", "appctl", "dpx", "layoutlint", "logstream", "perfpoll", "resclean", "scenediff", "startperf", "uitool"]
+members = ["adbkit", "appctl", "assetgen", "dpx", "layoutlint", "logstream", "perfpoll", "resclean", "scenediff", "startperf", "uitool"]
 
 [profile.release]
 lto = true

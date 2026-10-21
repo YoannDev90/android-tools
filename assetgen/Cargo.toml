@@ -1,0 +1,15 @@
+[package]
+name = "assetgen"
+version = "0.1.0"
+edition = "2021"
+description = "Android density asset generator — launcher, notification, adaptive, 9-patch from one source PNG"
+license = "MIT"
+
+[[bin]]
+name = "assetgen"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+image = "0.25"

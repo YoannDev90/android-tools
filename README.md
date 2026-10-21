@@ -6,6 +6,7 @@ adb-based tools for Android development, written in Rust.
 |-------|-------------|
 | [`adbkit`](adbkit/) | Shared adb helpers for the android-tools workspace |
 | [`appctl`](appctl/) | App lifecycle over adb — clear data/cache, restart, kill, uninstall, deep links, one or every device |
+| [`assetgen`](assetgen/) | Android density asset generator — launcher, notification, adaptive, 9-patch from one source PNG |
 | [`dpx`](dpx/) | px ↔ dp ↔ sp converter — offline, or against the device's real density |
 | [`layoutlint`](layoutlint/) | UI hierarchy lint — touch targets, overlap, labels, from a uiautomator dump |
 | [`logstream`](logstream/) | Live Android log streamer - logcat, but actually nice |
@@ -56,6 +57,12 @@ generated files are out of date with their sources.
 ├── .github/
 │   └── workflows
 ├── appctl/
+│   ├── .METADATA.toml
+│   ├── Cargo.toml
+│   ├── LICENSE
+│   ├── README.md
+│   └── src
+├── assetgen/
 │   ├── .METADATA.toml
 │   ├── Cargo.toml
 │   ├── LICENSE

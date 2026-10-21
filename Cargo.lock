@@ -156,6 +156,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "assetgen"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "image",
+]
+
+[[package]]
 name = "atomic"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

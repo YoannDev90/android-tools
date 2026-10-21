@@ -1,0 +1,20 @@
+[package]
+name = "assetgen"
+version = "0.1.0"
+edition = "2021"
+description = "Android density asset generator — launcher, notification, adaptive, 9-patch from one source PNG"
+license = "MIT"
+
+[metadata]
+long_description = "Offline Android Asset Studio: turns one square source PNG into the full density set (mdpi to xxxhdpi) — legacy launcher icons with optional circle-cropped round variants, notification icons, generic drawables at any dp base, adaptive icons (108 dp foreground/background layers plus the mipmap-anydpi-v26 entries) and validated .9.png rescales that keep markers 1 px wide and moving with their content. Lanczos3 scaling, platform dp rounding, no device and no SDK."
+readme = "assetgen/README.md"
+license_file = "assetgen/LICENSE"
+manifest = "assetgen/Cargo.toml"
+entrypoint = "assetgen/src/main.rs"
+category = "graphics"
+tags = ["android", "assets", "launcher-icon", "adaptive-icon", "9-patch", "densities", "cli"]
+requires = {}
+features = ["Launcher icons (mipmap-*, 48 dp) with --round circle crop", "Notification icons (drawable-*, 24 dp)", "Generic drawables at any --dp base", "Adaptive icons: 108 dp layers + mipmap-anydpi-v26 XMLs, color or PNG background", "9-patch rescale across densities with aapt-contract validation", "Lanczos3 scaling, platform rounding, warnings before upscaling"]
+dependencies = { anyhow = "1", clap = "4", image = "0.25" }
+tests = true
+source = { files = ["main.rs", "gen.rs"] }
