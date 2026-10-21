@@ -359,6 +359,107 @@ pub fn nine_patch(source: &RgbaImage, name: &str, from: f32) -> Result<Vec<Asset
 		.collect())
 }
 
+/// A debug badge: SVG re-rendered crisply at every density, or a square
+/// PNG resized through the same Lanczos pipeline.
+pub enum Badge {
+	Svg(Vec<u8>),
+	Png(RgbaImage),
+}
+
+impl Badge {
+	pub fn rasterize(&self, size: u32) -> Result<RgbaImage, String> {
+		match self {
+			Badge::Svg(data) => render_svg(data, size),
+			Badge::Png(img) => {
+				if img.width() != img.height() {
+					return Err(format!(
+						"badge PNG is {}x{}, expected square",
+						img.width(),
+						img.height()
+					));
+				}
+				Ok(image::imageops::resize(img, size, size, FilterType::Lanczos3))
+			}
+		}
+	}
+}
+
+/// Render an SVG badge at `size`x`size`, fit-contained and centered.
+/// System fonts are loaded so text-bearing badges resolve.
+pub fn render_svg(data: &[u8], size: u32) -> Result<RgbaImage, String> {
+	let mut fonts = usvg::fontdb::Database::new();
+	fonts.load_system_fonts();
+	let opt = usvg::Options { fontdb: std::sync::Arc::new(fonts), ..Default::default() };
+	let tree = usvg::Tree::from_data(data, &opt).map_err(|e| e.to_string())?;
+	let (w, h) = (tree.size().width(), tree.size().height());
+	let scale = (size as f32 / w).min(size as f32 / h);
+	let (dx, dy) = ((size as f32 - w * scale) / 2.0, (size as f32 - h * scale) / 2.0);
+	let transform = tiny_skia::Transform::from_scale(scale, scale).post_translate(dx, dy);
+	let mut pixmap = tiny_skia::Pixmap::new(size, size).ok_or("cannot allocate badge pixmap")?;
+	resvg::render(&tree, transform, &mut pixmap.as_mut());
+	// The pixmap is premultiplied; icon compositing wants straight alpha.
+	let mut out = RgbaImage::new(size, size);
+	for (i, px) in pixmap.pixels().iter().enumerate() {
+		let a = px.alpha();
+		let un =
+			|c: u8| if a == 0 { 0 } else { (u32::from(c) * 255 / u32::from(a)).min(255) as u8 };
+		let (x, y) = (i as u32 % size, i as u32 / size);
+		out.put_pixel(x, y, Rgba([un(px.red()), un(px.green()), un(px.blue()), a]));
+	}
+	Ok(out)
+}
+
+/// Where the badge sits on the icon.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Corner {
+	Tl,
+	Tr,
+	Bl,
+	Br,
+}
+
+/// Top-left of the badge slot inside the icon.
+pub fn corner_offset(corner: Corner, icon: u32, badge: u32) -> (u32, u32) {
+	let far = icon.saturating_sub(badge);
+	match corner {
+		Corner::Tl => (0, 0),
+		Corner::Tr => (far, 0),
+		Corner::Bl => (0, far),
+		Corner::Br => (far, far),
+	}
+}
+
+/// Alpha-composite the badge into one icon, in place.
+pub fn apply_badge(icon: &mut RgbaImage, badge: &RgbaImage, corner: Corner) {
+	let (x, y) = corner_offset(corner, icon.width(), badge.width());
+	image::imageops::overlay(icon, badge, x as i64, y as i64);
+}
+
+/// Launcher icons for a debug build: the regular set (legacy + round),
+/// every layer carrying the badge in the chosen corner. Meant for
+/// `src/debug/res`, which AGP applies over `src/main/res` in debug
+/// builds without any Gradle change.
+pub fn debug(
+	source: &DynamicImage,
+	name: &str,
+	round: Option<&DynamicImage>,
+	badge: &Badge,
+	corner: Corner,
+	size_pct: u32,
+) -> Result<Vec<Asset>, String> {
+	if size_pct == 0 || size_pct > 100 {
+		return Err(format!("badge size {size_pct}% out of range 1..=100"));
+	}
+	let mut assets = launcher(source, name, round)?;
+	for asset in &mut assets {
+		let Some(img) = asset.image.as_mut() else { continue };
+		let size = ((u64::from(img.width()) * u64::from(size_pct)) / 100).max(1) as u32;
+		let badge_img = badge.rasterize(size)?;
+		apply_badge(img, &badge_img, corner);
+	}
+	Ok(assets)
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -543,5 +644,73 @@ mod tests {
 		assert_eq!(assets[3].dir, "drawable-xxxhdpi");
 		assert_eq!(assets[3].image.as_ref().unwrap().dimensions(), (42, 42)); // 20 content @ 2, +2 border
 		assert!(nine_patch(&fixture_patch(), "Bad", 2.0).is_err());
+	}
+
+	#[test]
+	fn corner_offsets_anchor_the_badge_slot() {
+		assert_eq!(corner_offset(Corner::Tl, 96, 32), (0, 0));
+		assert_eq!(corner_offset(Corner::Tr, 96, 32), (64, 0));
+		assert_eq!(corner_offset(Corner::Bl, 96, 32), (0, 64));
+		assert_eq!(corner_offset(Corner::Br, 96, 32), (64, 64));
+		// A badge larger than the icon clamps instead of underflowing.
+		assert_eq!(corner_offset(Corner::Br, 32, 96), (0, 0));
+	}
+
+	#[test]
+	fn apply_badge_overlays_alpha_and_keeps_the_rest() {
+		let mut icon = RgbaImage::from_pixel(96, 96, Rgba([10, 20, 30, 255]));
+		let badge = RgbaImage::from_pixel(32, 32, Rgba([255, 0, 0, 255]));
+		apply_badge(&mut icon, &badge, Corner::Br);
+		assert_eq!(icon.get_pixel(95, 95), &Rgba([255, 0, 0, 255]));
+		assert_eq!(icon.get_pixel(0, 0), &Rgba([10, 20, 30, 255]));
+		// Semi-transparent badge pixels blend (50% alpha).
+		let mut icon = RgbaImage::from_pixel(96, 96, Rgba([0, 0, 0, 255]));
+		let badge = RgbaImage::from_pixel(32, 32, Rgba([255, 255, 255, 128]));
+		apply_badge(&mut icon, &badge, Corner::Tl);
+		let blended = icon.get_pixel(0, 0).0;
+		assert!(blended[0] > 120 && blended[0] < 136, "got {blended:?}");
+	}
+
+	#[test]
+	fn badge_rasterize_resizes_png_and_refuses_non_square() {
+		let square = RgbaImage::from_pixel(64, 64, Rgba([255, 0, 0, 255]));
+		let out = Badge::Png(square).rasterize(32).unwrap();
+		assert_eq!(out.dimensions(), (32, 32));
+		let wide = RgbaImage::from_pixel(64, 32, Rgba([255, 0, 0, 255]));
+		assert!(Badge::Png(wide).rasterize(32).is_err());
+	}
+
+	#[test]
+	fn svg_badges_render_at_any_size() {
+		let svg = r##"<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="#00ff00"/></svg>"##;
+		let out = Badge::Svg(svg.as_bytes().to_vec()).rasterize(24).unwrap();
+		assert_eq!(out.dimensions(), (24, 24));
+		assert_eq!(out.get_pixel(12, 12).0[1], 255); // green fills the slot
+		let bad = Badge::Svg(b"<svg".to_vec()).rasterize(24);
+		assert!(bad.is_err());
+	}
+
+	#[test]
+	fn debug_plan_badges_every_launcher_layer() {
+		let badge = Badge::Png(RgbaImage::from_pixel(8, 8, Rgba([255, 0, 0, 255])));
+		let assets =
+			debug(&source(192), "ic_launcher", Some(&source(192)), &badge, Corner::Br, 50).unwrap();
+		assert_eq!(assets.len(), 10); // 5 legacy + 5 round
+		let mdpi = assets[0].image.as_ref().unwrap();
+		assert_eq!(mdpi.dimensions(), (48, 48));
+		// 50% of 48 = 24px badge in the bottom-right corner.
+		assert_eq!(mdpi.get_pixel(47, 47), &Rgba([255, 0, 0, 255]));
+		assert_eq!(mdpi.get_pixel(23, 23).0[3], 255); // badge starts at 24
+		let pristine = resize_square(&source(192), 48).unwrap();
+		assert_eq!(*mdpi.get_pixel(22, 22), *pristine.get_pixel(22, 22));
+		let round = assets[5].image.as_ref().unwrap();
+		assert_eq!(round.get_pixel(47, 47), &Rgba([255, 0, 0, 255]));
+	}
+
+	#[test]
+	fn debug_rejects_bad_badge_sizes() {
+		let badge = Badge::Png(RgbaImage::from_pixel(8, 8, Rgba([255, 0, 0, 255])));
+		assert!(debug(&source(192), "ic_launcher", None, &badge, Corner::Br, 0).is_err());
+		assert!(debug(&source(192), "ic_launcher", None, &badge, Corner::Br, 101).is_err());
 	}
 }

@@ -2,7 +2,7 @@
 name = "assetgen"
 version = "0.1.0"
 edition = "2021"
-description = "Android density asset generator — launcher, notification, adaptive, 9-patch from one source PNG"
+description = "Android density asset generator — launcher, notification, adaptive, 9-patch, debug badges from one source PNG"
 license = "MIT"
 
 [[bin]]
@@ -13,3 +13,6 @@ path = "src/main.rs"
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 image = "0.25"
+resvg = "0.48.1"
+tiny-skia = "0.12.0"
+usvg = "0.48.1"
