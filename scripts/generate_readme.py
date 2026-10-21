@@ -5,7 +5,7 @@ import json
 import os
 
 ROOT_FILES = ["Cargo.toml", "Cargo.lock", "index.json", "README.md", "LICENSE", "rustfmt.toml"]
-ROOT_DIRS = ["adbkit", "logstream", "uitool", "scripts"]
+ROOT_DIRS = ["adbkit", "logstream", "startperf", "uitool", "scripts"]
 # Personal scratch notes / local tooling — not part of the generated project docs.
 EXCLUDED = {"Ideas.md", ".gitignore", ".git", "target"}
 

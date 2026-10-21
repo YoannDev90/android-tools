@@ -6,6 +6,7 @@ adb-based tools for Android development, written in Rust.
 |-------|-------------|
 | [`adbkit`](adbkit/) | Shared adb helpers for the android-tools workspace |
 | [`logstream`](logstream/) | Live Android log streamer - logcat, but actually nice |
+| [`startperf`](startperf/) | App cold/warm start benchmark over adb |
 | [`uitool`](uitool/) | Practical Android UI driver — dump, find, tap, shot over adb |
 
 ## Requirements
@@ -55,6 +56,12 @@ generated files are out of date with their sources.
 │   ├── README.md
 │   └── src
 ├── logstream/
+│   ├── .METADATA.toml
+│   ├── Cargo.toml
+│   ├── LICENSE
+│   ├── README.md
+│   └── src
+├── startperf/
 │   ├── .METADATA.toml
 │   ├── Cargo.toml
 │   ├── LICENSE
