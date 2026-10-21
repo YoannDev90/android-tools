@@ -97,19 +97,17 @@ pub fn spawn_pid_watcher(
 ) -> Arc<Mutex<Option<u32>>> {
 	let current = Arc::new(Mutex::new(None::<u32>));
 	let out_slot = Arc::clone(&current);
-	std::thread::spawn(move || {
-		loop {
-			let pid = pid_of(&serial, &package);
-			let mut guard = out_slot.lock().unwrap();
-			if *guard != pid {
-				*guard = pid;
-				if tx.send(Event::PidChanged(pid)).is_err() {
-					break;
-				}
+	std::thread::spawn(move || loop {
+		let pid = pid_of(&serial, &package);
+		let mut guard = out_slot.lock().unwrap();
+		if *guard != pid {
+			*guard = pid;
+			if tx.send(Event::PidChanged(pid)).is_err() {
+				break;
 			}
-			drop(guard);
-			std::thread::sleep(every);
 		}
+		drop(guard);
+		std::thread::sleep(every);
 	});
 	current
 }

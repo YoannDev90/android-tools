@@ -9,12 +9,12 @@ const BOLD: &str = "\x1b[1m";
 
 fn level_color(l: Level) -> &'static str {
 	match l {
-		Level::Verbose => "\x1b[90m",  // grey
-		Level::Debug => "\x1b[36m",    // cyan
-		Level::Info => "\x1b[32m",     // green
-		Level::Warn => "\x1b[33m",     // yellow
-		Level::Error => "\x1b[31m",    // red
-		Level::Fatal => "\x1b[1;31m",  // bold red
+		Level::Verbose => "\x1b[90m", // grey
+		Level::Debug => "\x1b[36m",   // cyan
+		Level::Info => "\x1b[32m",    // green
+		Level::Warn => "\x1b[33m",    // yellow
+		Level::Error => "\x1b[31m",   // red
+		Level::Fatal => "\x1b[1;31m", // bold red
 	}
 }
 
@@ -110,11 +110,8 @@ impl PlainRenderer {
 		let time = if r.time.is_empty() { "—".to_string() } else { r.time.clone() };
 		let lvl = r.level.as_char().to_string();
 		let tag = format!("{:<w$}", r.tag, w = self.tag_width);
-		let count = if e.count > 1 {
-			self.paint(&format!(" ×{}", e.count), BOLD)
-		} else {
-			String::new()
-		};
+		let count =
+			if e.count > 1 { self.paint(&format!(" ×{}", e.count), BOLD) } else { String::new() };
 
 		// message (first line; stacktrace lines indented under the tag column)
 		let indent = " ".repeat(self.tag_width);

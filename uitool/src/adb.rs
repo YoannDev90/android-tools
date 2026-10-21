@@ -14,7 +14,12 @@ pub fn press(dev: &Adb, x: i32, y: i32, duration: u64) -> Result<()> {
 		dev.shell(&["input", "tap", &x.to_string(), &y.to_string()])?;
 	} else {
 		dev.shell(&[
-			"input", "swipe", &x.to_string(), &y.to_string(), &x.to_string(), &y.to_string(),
+			"input",
+			"swipe",
+			&x.to_string(),
+			&y.to_string(),
+			&x.to_string(),
+			&y.to_string(),
 			&duration.to_string(),
 		])?;
 	}
@@ -26,9 +31,9 @@ pub fn resolve_launcher(dev: &Adb, package: &str) -> Result<String> {
 	let out = dev
 		.shell(&["cmd", "package", "resolve-activity", "--brief", package])
 		.with_context(|| format!("resolve-activity {package}"))?;
-	parse_component(&out)
-		.map(str::to_string)
-		.with_context(|| format!("no launcher activity for {package:?} — pass the full component (pkg/.Activity)"))
+	parse_component(&out).map(str::to_string).with_context(|| {
+		format!("no launcher activity for {package:?} — pass the full component (pkg/.Activity)")
+	})
 }
 
 /// Last `package/class` line of a `resolve-activity --brief` dump.

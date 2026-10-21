@@ -8,9 +8,9 @@ use std::io::{IsTerminal, Write};
 use std::sync::mpsc::{self, Receiver};
 use std::time::Duration;
 
-	use anyhow::{Context, Result};
-	use adbkit::pick_serial;
-	use clap::Parser;
+use adbkit::pick_serial;
+use anyhow::{Context, Result};
+use clap::Parser;
 
 use buffer::{Banner, Buffer, Filter, PidMode};
 use parse::Level;
@@ -94,7 +94,8 @@ fn main() -> Result<()> {
 	// a clone and writes through it).
 	let pid_slot: PidSlot = match &package {
 		Some(pkg) => {
-			let slot = adb::spawn_pid_watcher(serial.clone(), pkg.clone(), tx, Duration::from_millis(700));
+			let slot =
+				adb::spawn_pid_watcher(serial.clone(), pkg.clone(), tx, Duration::from_millis(700));
 			// Seed the current pid so the header is correct from frame 1.
 			if let Some(pid) = adb::pid_of(&serial, pkg) {
 				*log_slot_lock(&slot) = Some(pid);
@@ -264,7 +265,10 @@ fn handle_event_plain(
 			if !*exited {
 				*exited = true;
 				if !json {
-					writeln!(raw, "\x1b[33m[logstream] adb logcat exited (device disconnected?)\x1b[0m")?;
+					writeln!(
+						raw,
+						"\x1b[33m[logstream] adb logcat exited (device disconnected?)\x1b[0m"
+					)?;
 					raw.flush()?;
 				}
 			}
@@ -283,12 +287,7 @@ fn handle_event_plain(
 
 fn buffer_entry(rec: parse::Record) -> buffer::Entry {
 	let last_ms = rec.epoch_ms;
-	buffer::Entry {
-		record: rec,
-		count: 1,
-		banner: None,
-		last_ms,
-	}
+	buffer::Entry { record: rec, count: 1, banner: None, last_ms }
 }
 
 fn entry_from_banner(b: Banner, now: u64) -> buffer::Entry {
@@ -317,7 +316,10 @@ fn now_ms() -> u64 {
 
 /// `--out` mirror for banners: written in *every* mode (records are mirrored
 /// as raw lines) so the file always reflects everything that was shown.
-fn write_banner_note(out_file: &mut Option<std::io::BufWriter<std::fs::File>>, msg: &str) -> Result<()> {
+fn write_banner_note(
+	out_file: &mut Option<std::io::BufWriter<std::fs::File>>,
+	msg: &str,
+) -> Result<()> {
 	if let Some(f) = out_file.as_mut() {
 		f.write_all(format!("[logstream] {msg}\n").as_bytes())?;
 		f.flush()?;
@@ -397,7 +399,8 @@ fn event_loop<B: ratatui::backend::Backend>(
 					let mode = app.filter.pid_mode;
 					refresh_pids(&mut app.filter, pid_slot, mode);
 					app.not_running = log_slot_lock(pid_slot).is_none() && mode == PidMode::App;
-					let is_crash = rec.tag == "AndroidRuntime" && rec.msg.contains("FATAL EXCEPTION");
+					let is_crash =
+						rec.tag == "AndroidRuntime" && rec.msg.contains("FATAL EXCEPTION");
 					if app.filter.keep(&rec) {
 						if let Some(f) = out_file.as_mut() {
 							f.write_all(render::raw_line(&rec).as_bytes())?;
@@ -423,7 +426,9 @@ fn event_loop<B: ratatui::backend::Backend>(
 						.unwrap_or_default()
 						.as_millis() as u64;
 					let banner = match (old, pid) {
-						(Some(o), Some(n)) if o != n => Some(Banner::Restart { old_pid: o, new_pid: n }),
+						(Some(o), Some(n)) if o != n => {
+							Some(Banner::Restart { old_pid: o, new_pid: n })
+						}
 						(Some(o), None) => Some(Banner::Died { pid: o }),
 						(None, Some(n)) => Some(Banner::Started { pid: n }),
 						_ => None,

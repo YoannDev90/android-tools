@@ -44,14 +44,14 @@ enum Cmd {
 		#[arg(short = 't', long, default_value_t = 10)]
 		timeout: u64,
 	},
-		/// Tap by coordinates (`uitool tap 978 2316`) or by label (`uitool tap Aperçu`).
-		Tap {
-			/// Either `x y` (two args) or a label.
-			args: Vec<String>,
-			/// Milliseconds to hold the press (0 = quick `input tap`).
-			#[arg(short, long, default_value_t = 0)]
-			duration: u64,
-		},
+	/// Tap by coordinates (`uitool tap 978 2316`) or by label (`uitool tap Aperçu`).
+	Tap {
+		/// Either `x y` (two args) or a label.
+		args: Vec<String>,
+		/// Milliseconds to hold the press (0 = quick `input tap`).
+		#[arg(short, long, default_value_t = 0)]
+		duration: u64,
+	},
 	/// Long-press a label.
 	LongPress {
 		query: String,
@@ -88,8 +88,8 @@ enum Cmd {
 		#[arg(long)]
 		wake: bool,
 	},
-		/// Launch an activity: package (resolves its launcher activity) or package/.Activity.
-		Launch {
+	/// Launch an activity: package (resolves its launcher activity) or package/.Activity.
+	Launch {
 		/// Package name, or package/component.
 		target: String,
 	},
@@ -196,27 +196,18 @@ fn main() -> Result<()> {
 			println!("{},{} ({})", b.cx(), b.cy(), query);
 		}
 		Cmd::Swipe { x1, y1, x2, y2, ms } => {
-			dev.shell(
-				&[
-					"input",
-					"swipe",
-					&x1.to_string(),
-					&y1.to_string(),
-					&x2.to_string(),
-					&y2.to_string(),
-					&ms.to_string(),
-				],
-			)?;
+			dev.shell(&[
+				"input",
+				"swipe",
+				&x1.to_string(),
+				&y1.to_string(),
+				&x2.to_string(),
+				&y2.to_string(),
+				&ms.to_string(),
+			])?;
 			println!("{x1},{y1} -> {x2},{y2}");
 		}
-		Cmd::Shot {
-			out,
-			crop,
-			scale,
-			max_dim,
-			quality,
-			wake,
-		} => {
+		Cmd::Shot { out, crop, scale, max_dim, quality, wake } => {
 			let crop = match crop {
 				Some(c) => {
 					let v: Vec<i32> = c
@@ -230,23 +221,13 @@ fn main() -> Result<()> {
 				}
 				None => None,
 			};
-			let opts = ShotOpts {
-				out,
-				crop,
-				scale,
-				max_dim,
-				quality,
-				wake,
-			};
+			let opts = ShotOpts { out, crop, scale, max_dim, quality, wake };
 			let path = shot::take(&dev, &opts)?;
 			println!("{}", path.display());
 		}
 		Cmd::Launch { target } => {
-			let component = if target.contains('/') {
-				target
-			} else {
-				adb::resolve_launcher(&dev, &target)?
-			};
+			let component =
+				if target.contains('/') { target } else { adb::resolve_launcher(&dev, &target)? };
 			dev.shell(&["am", "start", "-n", &component])?;
 			println!("started {component}");
 		}

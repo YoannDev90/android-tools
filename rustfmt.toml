@@ -1,0 +1,6 @@
+# The whole codebase is indented with tabs; keep rustfmt from converting.
+hard_tabs = true
+# Match the existing hand style: one-line struct literals and call arguments
+# stay on one line as long as they fit in max_width (rustfmt's default breaks
+# them at 60% of max_width, which would rewrite ~75 pre-existing passages).
+use_small_heuristics = "Max"

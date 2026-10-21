@@ -1,6 +1,8 @@
 use std::time::Duration;
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind};
+use crossterm::event::{
+	self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind,
+};
 use ratatui::layout::{Constraint, Layout};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -16,7 +18,9 @@ enum InputMode {
 	/// `/` — live search.
 	Search,
 	/// `+` / `-` — tag allow/deny.
-	Tag { allow: bool },
+	Tag {
+		allow: bool,
+	},
 	/// `:` — level filter (single char, applied immediately then back to Normal).
 	Level,
 }
@@ -210,7 +214,9 @@ impl App {
 
 	/// Split into layout areas: header, body, footer.
 	pub fn render(&mut self, frame: &mut Frame) {
-		let areas = Layout::vertical([Constraint::Length(1), Constraint::Min(1), Constraint::Length(1)]).split(frame.area());
+		let areas =
+			Layout::vertical([Constraint::Length(1), Constraint::Min(1), Constraint::Length(1)])
+				.split(frame.area());
 		self.last_height = areas[1].height as usize;
 		frame.render_widget(self.header(), areas[0]);
 		frame.render_widget(self.body(areas[1]), areas[1]);
@@ -218,17 +224,23 @@ impl App {
 	}
 
 	fn header(&self) -> Paragraph<'_> {
-		let pid = self
-			.filter
-			.app_pids
-			.first()
-			.map(|p| p.to_string())
-			.unwrap_or_else(|| if self.filter.pid_mode == PidMode::All { "all".into() } else { "—".into() });
+		let pid = self.filter.app_pids.first().map(|p| p.to_string()).unwrap_or_else(|| {
+			if self.filter.pid_mode == PidMode::All {
+				"all".into()
+			} else {
+				"—".into()
+			}
+		});
 		let level = format!("≥{}", self.filter.min_level.as_char());
 		let search = if self.filter.search.is_empty() {
 			String::new()
 		} else {
-			format!("  /{}/ {} match{}", self.filter.search, self.match_positions.len(), if self.match_positions.len() == 1 { "" } else { "es" })
+			format!(
+				"  /{}/ {} match{}",
+				self.filter.search,
+				self.match_positions.len(),
+				if self.match_positions.len() == 1 { "" } else { "es" }
+			)
 		};
 		let tagf = if self.filter.allow.is_empty() && self.filter.deny.is_empty() {
 			String::new()
@@ -313,14 +325,14 @@ impl App {
 		let msg_lines: Vec<&str> = r.msg.split('\n').collect();
 		let indent = " ".repeat(12 + 1 + 1 + 20 + 2);
 		for (mi, ml) in msg_lines.iter().enumerate() {
-			let mut spans: Vec<Span<'static>> = if mi == 0 {
-				head.clone()
-			} else {
-				vec![Span::raw(indent.clone())]
-			};
+			let mut spans: Vec<Span<'static>> =
+				if mi == 0 { head.clone() } else { vec![Span::raw(indent.clone())] };
 			spans.extend(highlight_spans(ml, re.as_ref()));
 			if mi == 0 && e.count > 1 {
-				spans.push(Span::styled(format!(" ×{}", e.count), Style::new().fg(Color::Magenta).bold()));
+				spans.push(Span::styled(
+					format!(" ×{}", e.count),
+					Style::new().fg(Color::Magenta).bold(),
+				));
 			}
 			let mut line = Line::from(spans);
 			if is_current {
@@ -354,12 +366,19 @@ impl App {
 				Span::styled("  Enter apply · Esc cancel", Style::new().fg(Color::DarkGray)),
 			])],
 			InputMode::Tag { allow } => {
-				let (label, color) = if allow { ("+ tag allow", Color::Green) } else { ("- tag deny", Color::Red) };
+				let (label, color) =
+					if allow { ("+ tag allow", Color::Green) } else { ("- tag deny", Color::Red) };
 				vec![Line::from(vec![
-					Span::styled(format!(" {label}: "), Style::new().fg(Color::Black).bg(color).bold()),
+					Span::styled(
+						format!(" {label}: "),
+						Style::new().fg(Color::Black).bg(color).bold(),
+					),
 					Span::raw(self.input.clone()),
 					Span::styled(" ▌", Style::new().fg(color)),
-					Span::styled("  prefix match · Enter apply · Esc cancel", Style::new().fg(Color::DarkGray)),
+					Span::styled(
+						"  prefix match · Enter apply · Esc cancel",
+						Style::new().fg(Color::DarkGray),
+					),
 				])]
 			}
 			InputMode::Level => vec![Line::from(vec![
@@ -369,7 +388,10 @@ impl App {
 			])],
 			InputMode::Normal => {
 				let left = if !self.status.is_empty() {
-					Line::from(Span::styled(format!(" {} ", self.status), Style::new().fg(Color::Black).bg(Color::Green)))
+					Line::from(Span::styled(
+						format!(" {} ", self.status),
+						Style::new().fg(Color::Black).bg(Color::Green),
+					))
 				} else {
 					Line::from(vec![
 						Span::styled(" /", Style::new().fg(Color::Yellow)),
@@ -466,28 +488,28 @@ impl App {
 		match self.input_mode {
 			InputMode::Search | InputMode::Tag { .. } => {
 				match key.code {
-				KeyCode::Esc => {
-					self.input.clear();
-					if self.input_mode == InputMode::Search {
-						self.filter.set_search("");
-						self.refilter();
+					KeyCode::Esc => {
+						self.input.clear();
+						if self.input_mode == InputMode::Search {
+							self.filter.set_search("");
+							self.refilter();
+						}
+						self.input_mode = InputMode::Normal;
 					}
-					self.input_mode = InputMode::Normal;
-				}
 					KeyCode::Enter => {
 						let input = std::mem::take(&mut self.input);
 						match self.input_mode {
-						InputMode::Search => {
-							let ok = self.filter.set_search(&input);
-							self.current_match = 0;
-							self.status = if input.is_empty() {
-								"search cleared".into()
-							} else if !ok {
-								format!("invalid regex: {input}")
-							} else {
-								format!("{} matches", self.match_positions.len())
-							};
-						}
+							InputMode::Search => {
+								let ok = self.filter.set_search(&input);
+								self.current_match = 0;
+								self.status = if input.is_empty() {
+									"search cleared".into()
+								} else if !ok {
+									format!("invalid regex: {input}")
+								} else {
+									format!("{} matches", self.match_positions.len())
+								};
+							}
 							InputMode::Tag { allow } => {
 								if input.is_empty() {
 									if allow {
@@ -495,7 +517,11 @@ impl App {
 									} else {
 										self.filter.deny.clear();
 									}
-									self.status = if allow { "allow-list cleared".into() } else { "deny-list cleared".into() };
+									self.status = if allow {
+										"allow-list cleared".into()
+									} else {
+										"deny-list cleared".into()
+									};
 								} else if allow {
 									if !self.filter.allow.contains(&input) {
 										self.filter.allow.push(input.clone());
@@ -513,42 +539,40 @@ impl App {
 						self.input_mode = InputMode::Normal;
 						self.refilter();
 					}
-				KeyCode::Backspace => {
-					self.input.pop();
-					if self.input_mode == InputMode::Search {
-						self.filter.set_search(&self.input);
-						self.current_match = 0;
-						self.refilter();
-					}
-				}
-				KeyCode::Char(c) => {
-					self.input.push(c);
-					// live search: refilter as you type
-					if self.input_mode == InputMode::Search {
-						self.filter.set_search(&self.input);
-						self.current_match = 0;
-						self.refilter();
-					}
-				}
-					_ => {}
-				}
-			}
-			InputMode::Level => {
-				match key.code {
-					KeyCode::Esc => self.input_mode = InputMode::Normal,
-					KeyCode::Char(c) => {
-						if let Some(l) = Level::from_str(&c.to_string()) {
-							self.filter.min_level = l;
-							self.status = format!("≥ {}", l.name());
+					KeyCode::Backspace => {
+						self.input.pop();
+						if self.input_mode == InputMode::Search {
+							self.filter.set_search(&self.input);
+							self.current_match = 0;
 							self.refilter();
-						} else {
-							self.status = format!("unknown level '{c}'");
 						}
-						self.input_mode = InputMode::Normal;
+					}
+					KeyCode::Char(c) => {
+						self.input.push(c);
+						// live search: refilter as you type
+						if self.input_mode == InputMode::Search {
+							self.filter.set_search(&self.input);
+							self.current_match = 0;
+							self.refilter();
+						}
 					}
 					_ => {}
 				}
 			}
+			InputMode::Level => match key.code {
+				KeyCode::Esc => self.input_mode = InputMode::Normal,
+				KeyCode::Char(c) => {
+					if let Some(l) = Level::from_str(&c.to_string()) {
+						self.filter.min_level = l;
+						self.status = format!("≥ {}", l.name());
+						self.refilter();
+					} else {
+						self.status = format!("unknown level '{c}'");
+					}
+					self.input_mode = InputMode::Normal;
+				}
+				_ => {}
+			},
 			InputMode::Normal => match key.code {
 				KeyCode::Char('q') => return true,
 				KeyCode::Char('/') => {
@@ -576,7 +600,11 @@ impl App {
 				KeyCode::Char('n') => self.next_match(1),
 				KeyCode::Char('N') => self.next_match(-1),
 				KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-					self.filter.pid_mode = if self.filter.pid_mode == PidMode::App { PidMode::All } else { PidMode::App };
+					self.filter.pid_mode = if self.filter.pid_mode == PidMode::App {
+						PidMode::All
+					} else {
+						PidMode::App
+					};
 					self.status = match self.filter.pid_mode {
 						PidMode::App => "filter: app pid".into(),
 						PidMode::All => "filter: all pids".into(),
@@ -781,12 +809,15 @@ mod tests {
 	#[test]
 	fn key_q_quits_and_slash_opens_search() {
 		let mut a = app();
-		let quit = Event::Key(crossterm::event::KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE));
+		let quit =
+			Event::Key(crossterm::event::KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE));
 		assert!(a.handle_event(&quit));
 
-		let slash = Event::Key(crossterm::event::KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE));
+		let slash =
+			Event::Key(crossterm::event::KeyEvent::new(KeyCode::Char('/'), KeyModifiers::NONE));
 		assert!(!a.handle_event(&slash));
-		let ch = Event::Key(crossterm::event::KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
+		let ch =
+			Event::Key(crossterm::event::KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE));
 		assert!(!a.handle_event(&ch));
 		assert_eq!(a.input, "x");
 		assert_eq!(a.filter.search, "x"); // live filter while typing
@@ -803,7 +834,11 @@ mod tests {
 		a.status_at = Some(std::time::Instant::now() - std::time::Duration::from_secs(5));
 		a.tick();
 		assert!(a.status.is_empty(), "status should have expired");
-		assert!(a.footer_text().contains("search"), "keybind hints should return: {}", a.footer_text());
+		assert!(
+			a.footer_text().contains("search"),
+			"keybind hints should return: {}",
+			a.footer_text()
+		);
 	}
 
 	#[test]
@@ -829,8 +864,15 @@ mod tests {
 		let pgup = Event::Key(crossterm::event::KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE));
 		a.handle_event(&pgup);
 		assert!(a.frozen.is_some(), "PageUp must pause the follow");
-		assert!(a.frozen_top < a.lines.len().saturating_sub(a.last_height), "must scroll away from the bottom");
-		assert!(a.footer_text().contains("paused"), "footer should show paused: {}", a.footer_text());
+		assert!(
+			a.frozen_top < a.lines.len().saturating_sub(a.last_height),
+			"must scroll away from the bottom"
+		);
+		assert!(
+			a.footer_text().contains("paused"),
+			"footer should show paused: {}",
+			a.footer_text()
+		);
 
 		// new arrivals must NOT move the paused view
 		let top_before = a.frozen_top;
@@ -844,7 +886,11 @@ mod tests {
 		let end = Event::Key(crossterm::event::KeyEvent::new(KeyCode::End, KeyModifiers::NONE));
 		a.handle_event(&end);
 		assert!(a.frozen.is_none(), "End resumes follow");
-		assert!(a.footer_text().contains("following"), "footer should show following: {}", a.footer_text());
+		assert!(
+			a.footer_text().contains("following"),
+			"footer should show following: {}",
+			a.footer_text()
+		);
 	}
 
 	#[test]
@@ -887,6 +933,10 @@ mod tests {
 			assert!(e.record.msg.starts_with("kept"), "wrong record: {}", e.record.msg);
 		}
 		// view indices must be ascending and unique (no corruption)
-		assert!(a.view.windows(2).all(|w| w[0] < w[1]), "view indices must be strictly ascending: {:?}", a.view);
+		assert!(
+			a.view.windows(2).all(|w| w[0] < w[1]),
+			"view indices must be strictly ascending: {:?}",
+			a.view
+		);
 	}
 }

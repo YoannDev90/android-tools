@@ -27,7 +27,9 @@ pub enum Banner {
 impl Banner {
 	pub fn text(&self) -> String {
 		match self {
-			Banner::Restart { old_pid, new_pid } => format!("↻ process restarted  {old_pid} → {new_pid}"),
+			Banner::Restart { old_pid, new_pid } => {
+				format!("↻ process restarted  {old_pid} → {new_pid}")
+			}
 			Banner::Died { pid } => format!("✗ process died  (pid {pid})"),
 			Banner::Crash => "✗ CRASH  uncaught exception (see FATAL below)".to_string(),
 			Banner::Started { pid } => format!("✓ process started  (pid {pid})"),
@@ -82,11 +84,8 @@ impl Filter {
 	/// user can see/fix it — it then matches nothing).
 	pub fn set_search(&mut self, q: &str) -> bool {
 		self.search = q.to_string();
-		self.search_re = if q.is_empty() {
-			None
-		} else {
-			regex::Regex::new(&format!("(?i)(?:{q})")).ok()
-		};
+		self.search_re =
+			if q.is_empty() { None } else { regex::Regex::new(&format!("(?i)(?:{q})")).ok() };
 		q.is_empty() || self.search_re.is_some()
 	}
 	/// System tags worth keeping when the line comes from *another* process
@@ -147,7 +146,10 @@ impl Filter {
 	/// Everything the *display* cares about: pid + tags + level + search.
 	/// `--out`/`--json` mirror exactly what is shown.
 	pub fn keep(&self, rec: &Record) -> bool {
-		self.matches_pid(rec) && self.matches_tags(rec) && self.matches_level(rec) && self.matches_search(rec)
+		self.matches_pid(rec)
+			&& self.matches_tags(rec)
+			&& self.matches_level(rec)
+			&& self.matches_search(rec)
 	}
 
 	/// Scope filters only (pid + tags + level) — decides what is *stored* in
@@ -210,12 +212,7 @@ impl Buffer {
 				return;
 			}
 		}
-		self.items.push_back(Entry {
-			last_ms: rec.epoch_ms,
-			record: rec,
-			count: 1,
-			banner: None,
-		});
+		self.items.push_back(Entry { last_ms: rec.epoch_ms, record: rec, count: 1, banner: None });
 		self.trim();
 	}
 
@@ -230,12 +227,7 @@ impl Buffer {
 			tag: "logstream".into(),
 			msg: banner.text(),
 		};
-		self.items.push_back(Entry {
-			record,
-			count: 1,
-			banner: Some(banner),
-			last_ms: at_ms,
-		});
+		self.items.push_back(Entry { record, count: 1, banner: Some(banner), last_ms: at_ms });
 		self.trim();
 	}
 

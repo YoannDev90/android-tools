@@ -105,7 +105,8 @@ pub fn parse_threadtime(line: &str) -> anyhow::Result<Option<Record>> {
 	let tid: u32 = tid_s.parse().map_err(|_| anyhow::anyhow!("bad tid"))?;
 	let level_c = level_s.chars().next().ok_or_else(|| anyhow::anyhow!("no level"))?;
 
-	let level = Level::from_logcat(level_c).ok_or_else(|| anyhow::anyhow!("bad level {level_c}"))?;
+	let level =
+		Level::from_logcat(level_c).ok_or_else(|| anyhow::anyhow!("bad level {level_c}"))?;
 
 	// TAG is padded with spaces, then `: message`
 	let (tag, msg) = match rest.find(':') {
@@ -148,8 +149,10 @@ fn take_token(s: &str, from: usize) -> Option<(&str, usize)> {
 
 fn parse_md(s: &str) -> anyhow::Result<(u32, u32)> {
 	let mut it = s.split('-');
-	let m: u32 = it.next().and_then(|x| x.parse().ok()).ok_or_else(|| anyhow::anyhow!("bad month"))?;
-	let d: u32 = it.next().and_then(|x| x.parse().ok()).ok_or_else(|| anyhow::anyhow!("bad day"))?;
+	let m: u32 =
+		it.next().and_then(|x| x.parse().ok()).ok_or_else(|| anyhow::anyhow!("bad month"))?;
+	let d: u32 =
+		it.next().and_then(|x| x.parse().ok()).ok_or_else(|| anyhow::anyhow!("bad day"))?;
 	Ok((m, d))
 }
 
@@ -157,9 +160,12 @@ fn parse_time(s: &str) -> anyhow::Result<(u32, u32, u32, u32)> {
 	// HH:MM:SS.mmm
 	let (hms, frac) = s.split_once('.').unwrap_or((s, "0"));
 	let mut it = hms.split(':');
-	let h: u32 = it.next().and_then(|x| x.parse().ok()).ok_or_else(|| anyhow::anyhow!("bad hour"))?;
-	let m: u32 = it.next().and_then(|x| x.parse().ok()).ok_or_else(|| anyhow::anyhow!("bad min"))?;
-	let sec: u32 = it.next().and_then(|x| x.parse().ok()).ok_or_else(|| anyhow::anyhow!("bad sec"))?;
+	let h: u32 =
+		it.next().and_then(|x| x.parse().ok()).ok_or_else(|| anyhow::anyhow!("bad hour"))?;
+	let m: u32 =
+		it.next().and_then(|x| x.parse().ok()).ok_or_else(|| anyhow::anyhow!("bad min"))?;
+	let sec: u32 =
+		it.next().and_then(|x| x.parse().ok()).ok_or_else(|| anyhow::anyhow!("bad sec"))?;
 	// `.5` → 500ms, `.12` → 120ms, `.123` → 123ms
 	let mut frac = frac.to_string();
 	while frac.len() < 3 {
@@ -171,7 +177,14 @@ fn parse_time(s: &str) -> anyhow::Result<(u32, u32, u32, u32)> {
 
 /// Build epoch ms from month/day/time, choosing the year that makes the
 /// timestamp closest to *now* (handles Dec→Jan wraparound).
-fn stamp_to_epoch(month: u32, day: u32, hour: u32, min: u32, sec: u32, ms: u32) -> anyhow::Result<u64> {
+fn stamp_to_epoch(
+	month: u32,
+	day: u32,
+	hour: u32,
+	min: u32,
+	sec: u32,
+	ms: u32,
+) -> anyhow::Result<u64> {
 	let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as u64;
 	let now_y = civil_from_unix((now / 1000) as i64).0 as i64;
 
@@ -259,10 +272,7 @@ mod tests {
 	#[test]
 	fn epoch_is_close_to_now() {
 		let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64;
-		let line = format!(
-			"{} 12:00:00.000 1 1 I T : x",
-			now_time_md()
-		);
+		let line = format!("{} 12:00:00.000 1 1 I T : x", now_time_md());
 		let r = parse_threadtime(&line).unwrap().unwrap();
 		assert!(r.epoch_ms.abs_diff(now) < 2 * 86_400_000, "epoch drift too big");
 	}
