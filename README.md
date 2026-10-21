@@ -5,6 +5,7 @@ adb-based tools for Android development, written in Rust.
 | Crate | Description |
 |-------|-------------|
 | [`adbkit`](adbkit/) | Shared adb helpers for the android-tools workspace |
+| [`layoutlint`](layoutlint/) | UI hierarchy lint — touch targets, overlap, labels, from a uiautomator dump |
 | [`logstream`](logstream/) | Live Android log streamer - logcat, but actually nice |
 | [`scenediff`](scenediff/) | Visual regression diff of two screenshots, files or device captures |
 | [`startperf`](startperf/) | App cold/warm start benchmark over adb |
@@ -50,6 +51,12 @@ generated files are out of date with their sources.
 ├── rustfmt.toml
 ├── .github/
 │   └── workflows
+├── layoutlint/
+│   ├── .METADATA.toml
+│   ├── Cargo.toml
+│   ├── LICENSE
+│   ├── README.md
+│   └── src
 ├── scenediff/
 │   ├── .METADATA.toml
 │   ├── Cargo.toml

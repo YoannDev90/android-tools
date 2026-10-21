@@ -392,6 +392,34 @@ mod tests {
 		assert!(lint(&nodes, &Opts { min_touch: 48, density: 160 }).is_empty());
 	}
 
+	/// Acceptance fixture: all four rules fire on one screen — an
+	/// undersized target, two stacked ones, an icon-only target, and a
+	/// label sitting on a non-tappable title.
+	const ALL_FOUR: &str = r#"<hierarchy rotation="0">
+		<node index="0" text="Wi-Fi" content-desc="" resource-id="com.foo:id/actionbar_title" class="android.widget.TextView" clickable="false" bounds="[54,80][219,164]"/>
+		<node index="1" text="Wi-Fi" content-desc="" resource-id="com.foo:id/row" class="android.widget.LinearLayout" clickable="true" bounds="[25,200][1055,340]"/>
+		<node index="2" text="" content-desc="More options" resource-id="com.foo:id/row_chevron" class="android.widget.ImageView" clickable="true" bounds="[915,200][1055,340]"/>
+		<node index="3" text="Switch" content-desc="" resource-id="com.foo:id/switch" class="android.widget.Switch" clickable="true" bounds="[950,360][1040,420]"/>
+		<node index="4" text="" content-desc="" resource-id="com.foo:id/mic" class="android.widget.ImageButton" clickable="true" bounds="[900,440][1040,520]"/>
+	</hierarchy>"#;
+
+	#[test]
+	fn all_four_rules_fire_on_one_screen() {
+		let nodes = parse_hierarchy(ALL_FOUR);
+		let findings = lint(&nodes, &Opts { min_touch: 48, density: 440 });
+		let by_rule = |r: &str| findings.iter().filter(|f| f.rule == r).count();
+		// Switch (90x60 px = 32.7x21.8 dp) and mic are under 48 dp...
+		assert_eq!(by_rule("touch-size"), 2, "{findings:?}");
+		// …row and chevron are stacked (chevron fully inside)…
+		assert_eq!(by_rule("overlap"), 1, "{findings:?}");
+		// …the mic target renders nothing…
+		assert_eq!(by_rule("unlabeled"), 1, "{findings:?}");
+		// …and "Wi-Fi" shows on the untappable title.
+		assert_eq!(by_rule("duplicate-label"), 1, "{findings:?}");
+		assert_eq!(findings.iter().filter(|f| f.severity == Severity::Error).count(), 2);
+		assert_eq!(findings.iter().filter(|f| f.severity == Severity::Warning).count(), 3);
+	}
+
 	#[test]
 	fn text_report_lists_findings_and_counts() {
 		let nodes = parse_hierarchy(SMALL_TARGET);

@@ -1,0 +1,20 @@
+[package]
+name = "layoutlint"
+version = "0.1.0"
+edition = "2021"
+description = "UI hierarchy lint — touch targets, overlap, labels, from a uiautomator dump"
+license = "MIT"
+
+[metadata]
+long_description = "Lints a uiautomator UI hierarchy for the defects scripts and users trip over: tap targets under 48 dp, two targets stacked on each other, clickable views with no visible label, and labels sitting on nodes that are not tappable while an identical clickable one exists. Reads the dump from a connected device or replays a saved file (no device needed for CI), converts px to dp using the device density, and gates on exit codes: text or JSON report, exit 1 on any finding, --warn-only to opt out."
+readme = "layoutlint/README.md"
+license_file = "layoutlint/LICENSE"
+manifest = "layoutlint/Cargo.toml"
+entrypoint = "layoutlint/src/main.rs"
+category = "testing"
+tags = ["android", "adb", "uiautomator", "lint", "accessibility", "touch-target", "testing", "ci", "cli"]
+requires = { adb = "only for --device mode: Android SDK platform-tools in PATH" }
+features = ["Four rules: undersized touch targets (< 48 dp), overlapping tap targets, unlabeled clickable views, duplicated labels on non-tappable nodes", "--device dumps the connected device; --xml replays a saved dump with no device at all (CI)", "px→dp using the real screen density (`wm density`, override wins)", "Text and JSON reports; exit 1 on any finding for CI, --warn-only to keep exit 0", "--min-touch tunes the 48 dp guidance"]
+dependencies = { adbkit = "0.1 (path)", anyhow = "1", clap = "4", serde = "1", serde_json = "1" }
+tests = true
+source = { files = ["main.rs", "rules.rs", "device.rs"] }
