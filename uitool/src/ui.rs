@@ -145,6 +145,22 @@ pub fn parse_hierarchy(xml: &str) -> Vec<Node> {
 	nodes
 }
 
+/// [`parse_hierarchy`], but refusing the case where a hierarchy was produced
+/// yet carries no label at all.
+///
+/// That is exactly what `uiautomator dump` answers when the screen is off or
+/// locked: it dumps the keyguard, whose nodes have a `resource-id` but no
+/// `text`/`content-desc`. Left unchecked, `uitool dump` printed nothing and
+/// exited 0, and `find` reported "no node matching" while the real cause was
+/// the screen state.
+pub fn parse_hierarchy_checked(xml: &str) -> Result<Vec<Node>> {
+	let nodes = parse_hierarchy(xml);
+	if nodes.is_empty() {
+		bail!("no labeled node in the hierarchy — screen off or locked? (`uitool wake`)");
+	}
+	Ok(nodes)
+}
+
 /// Dump UI hierarchy from the device (via /sdcard, works reliably).
 pub fn dump(dev: &Adb) -> Result<String> {
 	dev.shell_timeout(
@@ -304,5 +320,32 @@ mod tests {
 		let boundsless = node("Go", "", true, None);
 		let err = pick_tap_target(&[boundsless], "Go").unwrap_err();
 		assert!(err.to_string().contains("has no bounds"), "{err}");
+	}
+
+	/// Verbatim excerpt of what `uiautomator dump` returns on a locked, dozing
+	/// screen (Redmi 23124RA7EO, Android 15): a complete hierarchy, but every
+	/// node is unlabeled.
+	const KEYGUARD: &str = r#"<?xml version='1.0' encoding='UTF-8' standalone='yes' ?><hierarchy rotation="0"><node index="0" text="" resource-id="com.android.systemui:id/legacy_window_root" class="android.widget.FrameLayout" package="com.android.systemui" content-desc="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" scrollable="false" long-clickable="false" password="false" selected="false" bounds="[0,0][1080,2400]"><node index="0" text="" resource-id="com.android.systemui:id/scrim_behind" class="android.view.View" content-desc="" clickable="false" bounds="[0,0][1080,2400]" /><node index="1" text="" resource-id="com.android.systemui:id/keyguard_root_view" class="android.view.ViewGroup" content-desc="" clickable="false" bounds="[0,0][1080,2400]"><node index="0" text="" resource-id="com.android.systemui:id/keyguard_message_area_container" class="android.widget.LinearLayout" content-desc="" clickable="false" bounds="[0,94][1080,2400]" /></node></node></hierarchy>"#;
+
+	#[test]
+	fn keyguard_hierarchy_parses_to_nothing() {
+		// Documents why the plain parser cannot tell "nothing to act on" apart
+		// from "screen off": the XML is well-formed and full of nodes.
+		assert!(parse_hierarchy(KEYGUARD).is_empty());
+	}
+
+	#[test]
+	fn checked_parser_rejects_a_screen_off_hierarchy() {
+		let err = parse_hierarchy_checked(KEYGUARD).unwrap_err();
+		assert!(err.to_string().contains("screen off"), "{err}");
+		assert!(err.to_string().contains("uitool wake"), "{err}");
+	}
+
+	#[test]
+	fn checked_parser_passes_a_labeled_hierarchy() {
+		let xml = r#"<hierarchy rotation="0"><node index="0" text="Wi-Fi" clickable="false" bounds="[0,0][10,10]" /></hierarchy>"#;
+		let nodes = parse_hierarchy_checked(xml).unwrap();
+		assert_eq!(nodes.len(), 1);
+		assert_eq!(nodes[0].label(), "Wi-Fi");
 	}
 }

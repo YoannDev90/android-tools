@@ -113,7 +113,7 @@ fn main() -> Result<()> {
 		}
 		Cmd::Dump => {
 			let xml = ui::dump(&dev)?;
-			let nodes = ui::parse_hierarchy(&xml);
+			let nodes = ui::parse_hierarchy_checked(&xml)?;
 			// write! so `| head` exits 0 instead of panicking on SIGPIPE.
 			let mut out = std::io::stdout().lock();
 			for n in nodes {
@@ -130,7 +130,7 @@ fn main() -> Result<()> {
 		}
 		Cmd::Find { query, clickable } => {
 			let xml = ui::dump(&dev)?;
-			let nodes = ui::parse_hierarchy(&xml);
+			let nodes = ui::parse_hierarchy_checked(&xml)?;
 			let mut found = ui::find_nodes(&nodes, &query);
 			if clickable {
 				found.retain(|n| n.clickable);
@@ -157,6 +157,9 @@ fn main() -> Result<()> {
 			let deadline = Instant::now() + Duration::from_secs(timeout);
 			loop {
 				let xml = ui::dump(&dev)?;
+				// Deliberately the tolerant parser: an empty hierarchy is the
+				// normal answer mid-transition, which is precisely what `wait`
+				// is polling through.
 				let nodes = ui::parse_hierarchy(&xml);
 				if let Some(n) = ui::find_nodes(&nodes, &query).first() {
 					if let Some(b) = n.bounds {
@@ -179,7 +182,7 @@ fn main() -> Result<()> {
 			}
 			1 => {
 				let xml = ui::dump(&dev)?;
-				let nodes = ui::parse_hierarchy(&xml);
+				let nodes = ui::parse_hierarchy_checked(&xml)?;
 				let n = ui::pick_tap_target(&nodes, &args[0])?;
 				let b = n.bounds.unwrap();
 				adb::press(&dev, b.cx(), b.cy(), duration)?;
@@ -189,7 +192,7 @@ fn main() -> Result<()> {
 		},
 		Cmd::LongPress { query, duration } => {
 			let xml = ui::dump(&dev)?;
-			let nodes = ui::parse_hierarchy(&xml);
+			let nodes = ui::parse_hierarchy_checked(&xml)?;
 			let n = ui::pick_tap_target(&nodes, &query)?;
 			let b = n.bounds.unwrap();
 			adb::press(&dev, b.cx(), b.cy(), duration)?;
