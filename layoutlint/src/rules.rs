@@ -131,6 +131,44 @@ fn unlabeled(nodes: &[Node], out: &mut Vec<Finding>) {
 	}
 }
 
+/// Rule 4 (warning): the label is displayed on a node you cannot tap
+/// while an identical clickable one exists — the ambiguity that makes
+/// `tap "Wi-Fi"` hit the toolbar title instead of the row. The flag sits
+/// on the non-clickable occurrence: that is the one a user aims at and
+/// that gets matched first.
+fn duplicate_label(nodes: &[Node], out: &mut Vec<Finding>) {
+	for n in nodes {
+		if n.self_clickable || displayed(n).is_none() {
+			continue;
+		}
+		let shown = displayed(n).expect("checked above");
+		let twin = nodes.iter().filter(|o| o.self_clickable).any(|o| displayed(o) == Some(shown));
+		if twin {
+			out.push(Finding {
+				severity: Severity::Warning,
+				rule: "duplicate-label",
+				message: format!(
+					"label {:?} is not tappable here, but an identical clickable target exists",
+					shown
+				),
+				bounds: n.bounds.map(|b| [b.x1, b.y1, b.x2, b.y2]),
+			});
+		}
+	}
+}
+
+/// What a human reads on this node: `text`, else `content-desc` — and
+/// deliberately nothing when both are empty (an id is not displayed).
+fn displayed(n: &Node) -> Option<&str> {
+	if !n.text.is_empty() {
+		Some(&n.text)
+	} else if !n.desc.is_empty() {
+		Some(&n.desc)
+	} else {
+		None
+	}
+}
+
 /// Lint the whole hierarchy against `opts`; findings come out in rule
 /// order, then node order — a stable order CI diffs can rely on.
 pub fn lint(nodes: &[Node], opts: &Opts) -> Vec<Finding> {
@@ -138,6 +176,7 @@ pub fn lint(nodes: &[Node], opts: &Opts) -> Vec<Finding> {
 	touch_size(nodes, opts, &mut out);
 	overlap(nodes, &mut out);
 	unlabeled(nodes, &mut out);
+	duplicate_label(nodes, &mut out);
 	out
 }
 
@@ -319,6 +358,35 @@ mod tests {
 	fn content_desc_counts_as_a_label() {
 		let xml = r#"<hierarchy rotation="0">
 			<node text="" content-desc="Close" resource-id="com.foo:id/close" clickable="true" bounds="[0,0][160,160]"/>
+		</hierarchy>"#;
+		let nodes = parse_hierarchy(xml);
+		assert!(lint(&nodes, &Opts { min_touch: 48, density: 160 }).is_empty());
+	}
+
+	#[test]
+	fn label_on_a_non_clickable_twin_is_a_warning() {
+		// The uitool "Wi-Fi" case: toolbar title (not tappable) and row
+		// (tappable) show the same label.
+		let xml = r#"<hierarchy rotation="0">
+			<node text="Wi-Fi" content-desc="" resource-id="com.foo:id/title" class="android.widget.TextView" clickable="false" bounds="[54,219][219,303]"/>
+			<node text="Wi-Fi" content-desc="" resource-id="com.foo:id/row" class="android.widget.LinearLayout" clickable="true" bounds="[25,333][1055,450]"/>
+			<node text="On" content-desc="" resource-id="com.foo:id/status" class="android.widget.TextView" clickable="false" bounds="[955,866][983,903]"/>
+		</hierarchy>"#;
+		let nodes = parse_hierarchy(xml);
+		let findings = lint(&nodes, &Opts { min_touch: 48, density: 160 });
+		assert_eq!(findings.len(), 1, "{findings:?}");
+		let f = &findings[0];
+		assert_eq!(f.severity, Severity::Warning);
+		assert_eq!(f.rule, "duplicate-label");
+		assert!(f.message.contains("\"Wi-Fi\""), "{}", f.message);
+		// Flagged on the non-tappable occurrence, not the row.
+		assert_eq!(f.bounds, Some([54, 219, 219, 303]));
+	}
+
+	#[test]
+	fn a_unique_label_is_not_a_duplicate() {
+		let xml = r#"<hierarchy rotation="0">
+			<node text="Send" resource-id="com.foo:id/send" class="android.widget.TextView" clickable="false" bounds="[0,0][100,160]"/>
 		</hierarchy>"#;
 		let nodes = parse_hierarchy(xml);
 		assert!(lint(&nodes, &Opts { min_touch: 48, density: 160 }).is_empty());
