@@ -14,7 +14,7 @@ entrypoint = "adbkit/src/lib.rs"
 category = "library"
 tags = ["adb", "shared", "plumbing"]
 requires = { adb = "Android SDK platform-tools in PATH" }
-features = ["Serial auto-pick when a single device is connected", "shell_opt for commands whose failure is a normal outcome", "shell_timeout with hard kill (uiautomator dump hangs)", "exec_out for raw stdout (screencap)"]
+features = ["Serial auto-pick when a single device is connected", "shell_opt for commands whose failure is a normal outcome", "shell_timeout with hard kill (uiautomator dump hangs)", "exec_out for raw stdout (screencap)", "resolve_launcher: a package's launcher activity, shared by uitool and startperf"]
 dependencies = { anyhow = "1" }
 tests = true
 source = { files = ["lib.rs"] }

@@ -121,6 +121,21 @@ impl Adb {
 	}
 }
 
+/// Launcher activity of a package (`cmd package resolve-activity --brief`).
+pub fn resolve_launcher(dev: &Adb, package: &str) -> Result<String> {
+	let out = dev
+		.shell(&["cmd", "package", "resolve-activity", "--brief", package])
+		.with_context(|| format!("resolve-activity {package}"))?;
+	parse_component(&out).map(str::to_string).with_context(|| {
+		format!("no launcher activity for {package:?} — pass the full component (pkg/.Activity)")
+	})
+}
+
+/// Last `package/class` line of a `resolve-activity --brief` dump.
+pub fn parse_component(out: &str) -> Option<&str> {
+	out.lines().map(str::trim).rfind(|l| l.contains('/'))
+}
+
 /// Spawn `cmd`, kill it after `timeout`, return its stdout.
 ///
 /// The pipes are drained on threads: a child that writes more than the pipe
@@ -217,6 +232,24 @@ mod tests {
 		if Command::new("adb").arg("--version").output().is_err() {
 			assert!(pick_serial(None).is_err());
 		}
+	}
+
+	#[test]
+	fn parse_component_takes_last_slash_line() {
+		let out = "priority=0 preferredOrder=0 match=0x108000 specificIndex=-1 isDefault=true\ncom.foo/.MainActivity\n";
+		assert_eq!(parse_component(out), Some("com.foo/.MainActivity"));
+	}
+
+	#[test]
+	fn parse_component_skips_lines_without_component() {
+		let out = "No activity found\ncom.foo/com.foo.Other\n";
+		assert_eq!(parse_component(out), Some("com.foo/com.foo.Other"));
+	}
+
+	#[test]
+	fn parse_component_none_without_activity() {
+		assert_eq!(parse_component("No activity found\n"), None);
+		assert_eq!(parse_component(""), None);
 	}
 
 	// `sh`-driven tests of the timeout core: they exercise the exact code path

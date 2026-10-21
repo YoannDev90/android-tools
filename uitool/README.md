@@ -86,10 +86,10 @@ cargo clippy
 cargo build --release
 ```
 
-Source layout: `src/main.rs` (CLI), `adb.rs` (press, launcher resolution,
-wake, screencap), `ui.rs` (hierarchy dump + node matching), `shot.rs`
-(screenshot post-processing). Depends on [`adbkit`](../adbkit/) for all generic
-`adb` plumbing.
+Source layout: `src/main.rs` (CLI), `adb.rs` (press, wake, screencap),
+`ui.rs` (hierarchy dump + node matching), `shot.rs` (screenshot
+post-processing). Depends on [`adbkit`](../adbkit/) for all generic
+`adb` plumbing, including launcher-activity resolution.
 
 ## License
 

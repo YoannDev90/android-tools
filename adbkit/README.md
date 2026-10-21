@@ -1,13 +1,18 @@
 # adbkit
 
 Shared `adb` helpers for the android-tools workspace. Generic plumbing only:
-device picking and shell/exec-out wrappers. Domain logic (logcat streaming,
-UI hierarchy, screenshots) stays in the tools that own it.
+device picking, shell/exec-out wrappers and launcher-activity resolution.
+Domain logic (logcat streaming, UI hierarchy, screenshots) stays in the tools
+that own it.
 
 ## API
 
 - `pick_serial(explicit)` — explicit flag, or the single connected device
 - `parse_devices(stdout)` — device ids in state `device` (pure, testable)
+- `resolve_launcher(dev, package)` — the package's launcher activity
+  (`cmd package resolve-activity --brief`)
+- `parse_component(stdout)` — last `package/class` line of such a dump
+  (pure, testable)
 - `Adb { serial }` — per-device handle:
   - `shell(args)` — fails on non-zero exit
   - `shell_opt(args)` — ignores non-zero exit (`pm path`, `pidof` failures are normal)

@@ -226,8 +226,11 @@ fn main() -> Result<()> {
 			println!("{}", path.display());
 		}
 		Cmd::Launch { target } => {
-			let component =
-				if target.contains('/') { target } else { adb::resolve_launcher(&dev, &target)? };
+			let component = if target.contains('/') {
+				target
+			} else {
+				adbkit::resolve_launcher(&dev, &target)?
+			};
 			dev.shell(&["am", "start", "-n", &component])?;
 			println!("started {component}");
 		}
