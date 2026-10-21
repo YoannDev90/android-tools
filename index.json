@@ -37,7 +37,7 @@
       "language": "rust",
       "license": "MIT",
       "description": "Shared adb helpers for the android-tools workspace",
-      "long_description": "Library crate with device picking, shell/exec-out wrappers with timeouts, and pure helpers. Domain logic stays in the tools that own it.",
+      "long_description": "Library crate with device picking, shell/exec-out wrappers with timeouts, the uiautomator hierarchy model (XML to flat nodes, via roxmltree), and pure helpers. Tool-specific behaviour stays in the tools that own it.",
       "readme": "adbkit/README.md",
       "license_file": "adbkit/LICENSE",
       "manifest": "adbkit/Cargo.toml",
@@ -56,17 +56,20 @@
         "shell_opt for commands whose failure is a normal outcome",
         "shell_timeout with hard kill (uiautomator dump hangs)",
         "exec_out for raw stdout (screencap)",
-        "resolve_launcher: a package's launcher activity, shared by uitool and startperf"
+        "resolve_launcher: a package's launcher activity, shared by uitool and startperf",
+        "uiautomator hierarchy parsing shared by the UI tools (roxmltree, testable without a device)"
       ],
       "dependencies": {
-        "anyhow": "1"
+        "anyhow": "1",
+        "roxmltree": "0.21"
       },
       "tests": true,
       "source": {
         "files": [
-          "lib.rs"
+          "lib.rs",
+          "hierarchy.rs"
         ],
-        "loc": 306
+        "loc": 721
       }
     },
     {
@@ -232,7 +235,7 @@
           "ui.rs",
           "shot.rs"
         ],
-        "loc": 1103
+        "loc": 700
       }
     }
   ]

@@ -1,8 +1,11 @@
 //! Shared `adb` helpers for the android-tools workspace.
 //!
-//! Generic plumbing only: device picking, shell/exec-out wrappers with
-//! timeouts. Domain logic (logcat streaming, UI hierarchy, screenshots)
-//! stays in the tools that own it.
+//! Generic plumbing (device picking, shell/exec-out wrappers with timeouts)
+//! plus what several tools need verbatim: the uiautomator hierarchy model
+//! ([`hierarchy`]). Tool-specific behaviour (logcat streaming, the
+//! tap-target policy, screenshots) stays in the tools that own it.
+
+pub mod hierarchy;
 
 use std::io::Read;
 use std::process::{Child, Command, Stdio};

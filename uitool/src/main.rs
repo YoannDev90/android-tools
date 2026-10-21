@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
 
+use adbkit::hierarchy::{find_nodes, parse_hierarchy};
 use adbkit::{pick_serial, Adb};
 
 use shot::ShotOpts;
@@ -131,7 +132,7 @@ fn main() -> Result<()> {
 		Cmd::Find { query, clickable } => {
 			let xml = ui::dump(&dev)?;
 			let nodes = ui::parse_hierarchy_checked(&xml)?;
-			let mut found = ui::find_nodes(&nodes, &query);
+			let mut found = find_nodes(&nodes, &query);
 			if clickable {
 				found.retain(|n| n.clickable);
 			}
@@ -160,8 +161,8 @@ fn main() -> Result<()> {
 				// Deliberately the tolerant parser: an empty hierarchy is the
 				// normal answer mid-transition, which is precisely what `wait`
 				// is polling through.
-				let nodes = ui::parse_hierarchy(&xml);
-				if let Some(n) = ui::find_nodes(&nodes, &query).first() {
+				let nodes = parse_hierarchy(&xml);
+				if let Some(n) = find_nodes(&nodes, &query).first() {
 					if let Some(b) = n.bounds {
 						println!("[{},{},{},{}]", b.x1, b.y1, b.x2, b.y2);
 						return Ok(());
