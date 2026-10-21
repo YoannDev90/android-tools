@@ -28,6 +28,8 @@ pub struct Node {
 	/// only thing an icon-only view exposes — without it such a node is
 	/// unreachable by `uitool tap`.
 	pub id: String,
+	/// Whether a tap here would activate something: the node itself, or an
+	/// ancestor (Android puts the flag on the row, the label on a child).
 	pub clickable: bool,
 	pub bounds: Option<Bounds>,
 }
@@ -143,25 +145,73 @@ fn attr(node: &str, name: &str) -> String {
 	String::new()
 }
 
+/// Parse the `<hierarchy>` XML into the nodes worth acting on.
+///
+/// A node is kept when it carries at least a `text`, a `content-desc` or a
+/// `resource-id`.
+///
+/// [`Node::clickable`] reports whether a tap on the node would land on
+/// something clickable — the node itself *or* any of its ancestors. Android
+/// puts the flag on the row (a `LinearLayout`) while the label sits on a child
+/// `TextView`, so a labeled node is almost never clickable on its own: on a
+/// real Settings screen all 21 labels have `clickable="false"` yet each has a
+/// clickable ancestor. Reading only the node itself made `--clickable` reject
+/// every one of them.
 pub fn parse_hierarchy(xml: &str) -> Vec<Node> {
+	const OPEN: &str = "<node ";
+	const CLOSE: &str = "</node>";
+
 	let mut nodes = Vec::new();
-	for part in xml.split("<node ").skip(1) {
-		let tag_end = part.find('>').unwrap_or(part.len());
-		let tag = &part[..tag_end];
-		if !tag.contains("bounds=") {
-			continue;
+	// `clickable` of each still-open ancestor, innermost last. Self-closing
+	// nodes (`<node ... />`) never open anything, so they must not be pushed.
+	let mut ancestors: Vec<bool> = Vec::new();
+	let mut rest = xml;
+
+	loop {
+		let open = rest.find(OPEN);
+		let close = rest.find(CLOSE);
+		match (open, close) {
+			(None, None) => break,
+			(None, Some(c)) => {
+				ancestors.pop();
+				rest = &rest[c + CLOSE.len()..];
+			}
+			// A close tag before the next open one ends an ancestor.
+			(Some(o), Some(c)) if c < o => {
+				ancestors.pop();
+				rest = &rest[c + CLOSE.len()..];
+			}
+			(Some(o), _) => {
+				let after = &rest[o + OPEN.len()..];
+				let tag_end = after.find('>').unwrap_or(after.len());
+				let tag = &after[..tag_end];
+				let clickable = attr(tag, "clickable") == "true";
+
+				// `<` and `&` are escaped by the serializer, so neither
+				// `<node ` nor `</node>` can appear inside an attribute value,
+				// and no `>` does either (`&gt;` has none) — scanning for the
+				// first `>` is therefore safe.
+				if tag.contains("bounds=") {
+					let text = attr(tag, "text");
+					let desc = attr(tag, "content-desc");
+					let id = attr(tag, "resource-id");
+					if !(text.is_empty() && desc.is_empty() && id.is_empty()) {
+						let bounds = attr(tag, "bounds");
+						nodes.push(Node {
+							text,
+							desc,
+							id,
+							clickable: clickable || ancestors.iter().any(|&c| c),
+							bounds: parse_bounds(&bounds),
+						});
+					}
+				}
+				if !tag.trim_end().ends_with('/') {
+					ancestors.push(clickable);
+				}
+				rest = &after[tag_end..];
+			}
 		}
-		let text = attr(tag, "text");
-		let desc = attr(tag, "content-desc");
-		let id = attr(tag, "resource-id");
-		// A node with only a resource-id is still worth keeping: that is the
-		// sole handle icon-only views offer.
-		if text.is_empty() && desc.is_empty() && id.is_empty() {
-			continue;
-		}
-		let clickable = attr(tag, "clickable") == "true";
-		let bounds = attr(tag, "bounds");
-		nodes.push(Node { text, desc, id, clickable, bounds: parse_bounds(&bounds) });
 	}
 	nodes
 }
@@ -404,6 +454,53 @@ mod tests {
 		assert_eq!(nodes.len(), 2);
 		// Addressable now, where before only the labeled row was.
 		assert!(nodes.iter().any(|n| n.matches("search_action")));
+	}
+
+	/// Shape captured on a real Settings screen: the row carries the flag, the
+	/// label sits on a child TextView two levels below.
+	const SETTINGS_ROW: &str = r#"<hierarchy rotation="0">
+<node index="0" class="android.widget.FrameLayout" clickable="false" bounds="[0,0][1080,2400]">
+<node index="0" class="android.widget.LinearLayout" clickable="false" bounds="[25,826][1055,943]">
+<node index="0" text="" class="android.widget.LinearLayout" clickable="true" bounds="[25,826][1055,943]">
+<node index="0" text="Wi-Fi" class="android.widget.TextView" clickable="false" bounds="[150,862][235,907]" />
+<node index="1" text="On" class="android.widget.TextView" clickable="false" bounds="[955,866][983,903]" />
+</node>
+</node>
+</hierarchy>"#;
+
+	#[test]
+	fn clickable_comes_from_the_row_not_the_label() {
+		let nodes = parse_hierarchy(SETTINGS_ROW);
+		assert_eq!(nodes.len(), 2, "{nodes:?}");
+		// Neither label is clickable itself; both are two levels under the
+		// clickable row, so tapping them activates it.
+		assert!(nodes.iter().all(|n| n.clickable), "{nodes:?}");
+		// Both labels are visible, so the screen passes the screen-off guard.
+		assert!(nodes.iter().all(Node::has_visible_label));
+	}
+
+	#[test]
+	fn clickable_stays_false_without_a_clickable_ancestor() {
+		let xml = r#"<node index="0" text="Title" clickable="false" bounds="[0,0][10,10]" />"#;
+		let nodes = parse_hierarchy(xml);
+		assert!(!nodes[0].clickable);
+	}
+
+	#[test]
+	fn self_closing_node_does_not_open_an_ancestor() {
+		// `<node ... />` must not leave a phantom level on the stack,
+		// otherwise every later sibling inherits a bogus clickable ancestor.
+		let xml = r#"<node index="0" class="ViewGroup" clickable="true" bounds="[0,0][10,10]"><node index="0" class="View" clickable="true" bounds="[0,0][1,1]" /><node index="1" text="Loose" clickable="false" bounds="[2,2][3,3]" /></node>"#;
+		let nodes = parse_hierarchy(xml);
+		// Only "Loose" is labeled: inside the clickable root, hence clickable.
+		assert_eq!(nodes.len(), 1);
+		assert!(nodes[0].clickable);
+
+		// Same node as a sibling *outside* any clickable root.
+		let xml = r#"<node index="0" class="View" clickable="true" bounds="[0,0][1,1]" /><node index="1" text="Loose" clickable="false" bounds="[2,2][3,3]" />"#;
+		let nodes = parse_hierarchy(xml);
+		assert_eq!(nodes.len(), 1);
+		assert!(!nodes[0].clickable, "a self-closing sibling must not inherit");
 	}
 
 	#[test]
