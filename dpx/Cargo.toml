@@ -1,0 +1,15 @@
+[package]
+name = "dpx"
+version = "0.1.0"
+edition = "2021"
+description = "px ↔ dp ↔ sp converter — offline, or against the device's real density"
+license = "MIT"
+
+[[bin]]
+name = "dpx"
+path = "src/main.rs"
+
+[dependencies]
+adbkit = { path = "../adbkit" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
