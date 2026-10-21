@@ -13,6 +13,9 @@ that own it.
   (`cmd package resolve-activity --brief`)
 - `parse_component(stdout)` — last `package/class` line of such a dump
   (pure, testable)
+- `device_density(dev)` — the density the UI draws at, in dpi
+  (`wm density`, override wins over physical)
+- `parse_wm_density(stdout)` — the same, parsed (pure, testable)
 - `Adb { serial }` — per-device handle:
   - `shell(args)` — fails on non-zero exit
   - `shell_opt(args)` — ignores non-zero exit (`pm path`, `pidof` failures are normal)

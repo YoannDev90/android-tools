@@ -150,6 +150,27 @@ pub fn parse_component(out: &str) -> Option<&str> {
 	out.lines().map(str::trim).rfind(|l| l.contains('/'))
 }
 
+/// Density the running UI is drawn at, in dpi (`wm density`).
+pub fn device_density(dev: &Adb) -> Result<u32> {
+	let out = dev.shell(&["wm", "density"])?;
+	parse_wm_density(&out).with_context(|| format!("unrecognized `wm density` output: {out:?}"))
+}
+
+/// dpi from `wm density`: the override when there is one — that is the
+/// density apps actually draw at — else the physical density.
+pub fn parse_wm_density(out: &str) -> Option<u32> {
+	let mut physical = None;
+	let mut over = None;
+	for line in out.lines() {
+		if let Some(v) = line.strip_prefix("Physical density:") {
+			physical = v.trim().parse().ok();
+		} else if let Some(v) = line.strip_prefix("Override density:") {
+			over = v.trim().parse().ok();
+		}
+	}
+	over.or(physical)
+}
+
 /// Spawn `cmd`, kill it after `timeout`, return its stdout.
 ///
 /// The pipes are drained on threads: a child that writes more than the pipe
@@ -264,6 +285,25 @@ mod tests {
 	fn parse_component_none_without_activity() {
 		assert_eq!(parse_component("No activity found\n"), None);
 		assert_eq!(parse_component(""), None);
+	}
+
+	#[test]
+	fn wm_density_prefers_the_override() {
+		// The override is what the UI draws at — an app sizing against the
+		// physical number would be wrong on any device with display scaling.
+		let out = "Physical density: 440\nOverride density: 335\n";
+		assert_eq!(parse_wm_density(out), Some(335));
+	}
+
+	#[test]
+	fn wm_density_falls_back_to_physical() {
+		assert_eq!(parse_wm_density("Physical density: 440"), Some(440));
+	}
+
+	#[test]
+	fn wm_density_unrecognized_is_none() {
+		assert_eq!(parse_wm_density("no device"), None);
+		assert_eq!(parse_wm_density(""), None);
 	}
 
 	// `sh`-driven tests of the timeout core: they exercise the exact code path
