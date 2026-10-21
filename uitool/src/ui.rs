@@ -28,8 +28,15 @@ pub struct Node {
 	/// only thing an icon-only view exposes — without it such a node is
 	/// unreachable by `uitool tap`.
 	pub id: String,
+	/// The node's own `clickable` attribute, exactly as Android reported it.
+	pub self_clickable: bool,
 	/// Whether a tap here would activate something: the node itself, or an
 	/// ancestor (Android puts the flag on the row, the label on a child).
+	///
+	/// Deliberately coarse — useful to *list* what a screen offers, but too
+	/// loose to choose a tap target, since a toolbar title four levels below
+	/// a clickable frame also counts. [`pick_tap_target`] prefers
+	/// [`Node::self_clickable`] for that reason.
 	pub clickable: bool,
 	pub bounds: Option<Bounds>,
 }
@@ -202,6 +209,7 @@ pub fn parse_hierarchy(xml: &str) -> Vec<Node> {
 							desc,
 							id,
 							clickable: clickable || ancestors.iter().any(|&c| c),
+							self_clickable: clickable,
 							bounds: parse_bounds(&bounds),
 						});
 					}
@@ -261,7 +269,17 @@ pub fn find_nodes<'a>(nodes: &'a [Node], query: &str) -> Vec<&'a Node> {
 	nodes.iter().filter(|n| n.matches(query)).collect()
 }
 
-/// Best node for tapping: clickable match first, then first match.
+/// Best node for tapping, in decreasing order of directness:
+///
+/// 1. a node that **accepts the click itself** and has bounds;
+/// 2. else one only tappable through an ancestor;
+/// 3. else the first match with bounds at all.
+///
+/// Tier 1 exists because tier 2 is nearly vacuous: since an ancestor's flag
+/// propagates, a toolbar title four levels under a clickable frame is
+/// "tappable", and tapping it does nothing. On the Wi-Fi screen `Wi-Fi`
+/// matches exactly that title, the row (self-clickable) and a switch label —
+/// the title came first and was picked.
 pub fn pick_tap_target<'a>(nodes: &'a [Node], query: &str) -> Result<&'a Node> {
 	let found = find_nodes(nodes, query);
 	if found.is_empty() {
@@ -269,7 +287,8 @@ pub fn pick_tap_target<'a>(nodes: &'a [Node], query: &str) -> Result<&'a Node> {
 	}
 	found
 		.iter()
-		.find(|n| n.clickable && n.bounds.is_some())
+		.find(|n| n.self_clickable && n.bounds.is_some())
+		.or_else(|| found.iter().find(|n| n.clickable && n.bounds.is_some()))
 		.or_else(|| found.iter().find(|n| n.bounds.is_some()))
 		.copied()
 		.with_context(|| format!("node {query:?} has no bounds"))
@@ -280,12 +299,38 @@ mod tests {
 	use super::*;
 
 	fn node(text: &str, desc: &str, clickable: bool, bounds: Option<Bounds>) -> Node {
-		Node { text: text.into(), desc: desc.into(), id: String::new(), clickable, bounds }
+		Node {
+			text: text.into(),
+			desc: desc.into(),
+			id: String::new(),
+			self_clickable: clickable,
+			clickable,
+			bounds,
+		}
 	}
 
 	/// Same, with a `resource-id` — what an icon-only view exposes.
 	fn with_id(text: &str, desc: &str, id: &str, clickable: bool, bounds: Option<Bounds>) -> Node {
-		Node { text: text.into(), desc: desc.into(), id: id.into(), clickable, bounds }
+		Node {
+			text: text.into(),
+			desc: desc.into(),
+			id: id.into(),
+			self_clickable: clickable,
+			clickable,
+			bounds,
+		}
+	}
+
+	/// A node whose tap only works because an ancestor accepts clicks.
+	fn via_ancestor(text: &str, bounds: Option<Bounds>) -> Node {
+		Node {
+			text: text.into(),
+			desc: String::new(),
+			id: String::new(),
+			self_clickable: false,
+			clickable: true,
+			bounds,
+		}
 	}
 
 	#[test]
@@ -405,6 +450,41 @@ mod tests {
 		let boundsless = node("Go", "", true, None);
 		let err = pick_tap_target(&[boundsless], "Go").unwrap_err();
 		assert!(err.to_string().contains("has no bounds"), "{err}");
+	}
+
+	#[test]
+	fn pick_tap_target_prefers_the_node_that_accepts_the_click() {
+		// Captured on the Wi-Fi screen: `Wi-Fi` matches the toolbar title (only
+		// tappable through a clickable frame four levels up), the row itself
+		// clickable, and a switch label. The title came first in document
+		// order and was picked — and tapping a title does nothing, confirmed
+		// on device (focus unchanged).
+		let title = via_ancestor("Wi-Fi", Some(Bounds { x1: 54, y1: 219, x2: 219, y2: 303 }));
+		let row = node("Wi-Fi", "", true, Some(Bounds { x1: 25, y1: 333, x2: 1055, y2: 450 }));
+
+		let title_first = [title.clone(), row.clone()];
+		let picked = pick_tap_target(&title_first, "Wi-Fi").unwrap();
+		assert_eq!(picked.bounds, row.bounds, "must pick the row, not the title");
+
+		// Document order must not decide when a later node accepts the click.
+		let row_first = [row, title];
+		let picked = pick_tap_target(&row_first, "Wi-Fi").unwrap();
+		assert!(picked.self_clickable);
+	}
+
+	#[test]
+	fn pick_tap_target_falls_back_to_tappable_then_to_any_bounds() {
+		// Nothing self-clickable: the tappable node still wins.
+		let title = via_ancestor("Wi-Fi", Some(Bounds { x1: 54, y1: 219, x2: 219, y2: 303 }));
+		let bare = node("Wi-Fi", "", false, Some(Bounds { x1: 0, y1: 0, x2: 10, y2: 10 }));
+		let both = [bare.clone(), title.clone()];
+		let picked = pick_tap_target(&both, "Wi-Fi").unwrap();
+		assert_eq!(picked.bounds, title.bounds, "tappable beats a bare node");
+
+		// Nothing clickable at all: first node with bounds.
+		let only_bare = [bare];
+		let picked = pick_tap_target(&only_bare, "Wi-Fi").unwrap();
+		assert_eq!(picked.bounds, Some(Bounds { x1: 0, y1: 0, x2: 10, y2: 10 }));
 	}
 
 	/// Verbatim excerpt of what `uiautomator dump` returns on a locked, dozing
