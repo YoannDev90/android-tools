@@ -87,6 +87,7 @@ generated files are out of date with their sources.
 ├── LICENSE
 ├── rustfmt.toml
 ├── .github/
+│   ├── dependabot.yml
 │   └── workflows
 ├── apkctl/
 │   ├── .METADATA.toml
