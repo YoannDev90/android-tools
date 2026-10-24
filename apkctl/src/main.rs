@@ -1,4 +1,4 @@
-//! `appctl` — the app-lifecycle actions of IntelliJ's adb-idea, as a
+//! `apkctl` — the app-lifecycle actions of IntelliJ's adb-idea, as a
 //! CLI that also works on every connected device at once.
 
 mod cmds;
@@ -19,7 +19,7 @@ const SHELL_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Parser, Debug)]
 #[command(
-	name = "appctl",
+	name = "apkctl",
 	about = "App lifecycle over adb — clear data/cache, restart, kill, uninstall, deep links",
 	version
 )]

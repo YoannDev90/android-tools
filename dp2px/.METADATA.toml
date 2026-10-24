@@ -1,5 +1,5 @@
 [package]
-name = "dpx"
+name = "dp2px"
 version = "0.1.0"
 edition = "2021"
 description = "px ↔ dp ↔ sp converter — offline, or against the device's real density"
@@ -7,10 +7,10 @@ license = "MIT"
 
 [metadata]
 long_description = "Converts Android dimensions between px, dp and sp from the command line. Offline by default (any density value works, mdpi 160 dpi as the baseline), or --device reads the real density from the connected device via wm density, override winning over physical — that is what the UI actually draws at. Takes several values at once, one result per line, and honours a custom font scale for sp."
-readme = "dpx/README.md"
-license_file = "dpx/LICENSE"
-manifest = "dpx/Cargo.toml"
-entrypoint = "dpx/src/main.rs"
+readme = "dp2px/README.md"
+license_file = "dp2px/LICENSE"
+manifest = "dp2px/Cargo.toml"
+entrypoint = "dp2px/src/main.rs"
 category = "development"
 tags = ["android", "dp", "px", "sp", "density", "converter", "typography", "cli"]
 requires = { adb = "only for --device mode: Android SDK platform-tools in PATH" }

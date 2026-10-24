@@ -1,4 +1,4 @@
-//! `dpx` — px ↔ dp ↔ sp from the command line.
+//! `dp2px` — px ↔ dp ↔ sp from the command line.
 //!
 //! Offline by default (any density number works, no device needed);
 //! `--device` reads the real one from `wm density`, override winning
@@ -15,7 +15,7 @@ use convert::{convert, fmt, Unit};
 
 #[derive(Parser, Debug)]
 #[command(
-	name = "dpx",
+	name = "dp2px",
 	about = "px ↔ dp ↔ sp converter — offline or against the device's density",
 	version
 )]

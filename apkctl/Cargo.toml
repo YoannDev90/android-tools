@@ -1,15 +1,15 @@
 [package]
-name = "appctl"
+name = "apkctl"
 version = "0.1.0"
 edition = "2021"
 description = "App lifecycle over adb — clear data/cache, restart, kill, uninstall, deep links, one or every device"
 license = "MIT"
 
 [[bin]]
-name = "appctl"
+name = "apkctl"
 path = "src/main.rs"
 
 [dependencies]
-adbkit = { path = "../adbkit" }
+adbkit = { path = "../adbkit", version = "0.1.0" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }

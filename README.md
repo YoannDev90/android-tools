@@ -5,9 +5,9 @@ adb-based tools for Android development, written in Rust.
 | Crate | Description |
 |-------|-------------|
 | [`adbkit`](adbkit/) | Shared adb helpers for the android-tools workspace |
-| [`appctl`](appctl/) | App lifecycle over adb — clear data/cache, restart, kill, uninstall, deep links, one or every device |
+| [`apkctl`](apkctl/) | App lifecycle over adb — clear data/cache, restart, kill, uninstall, deep links, one or every device |
 | [`assetgen`](assetgen/) | Android density asset generator — launcher, notification, adaptive, 9-patch, debug badges from one source PNG |
-| [`dpx`](dpx/) | px ↔ dp ↔ sp converter — offline, or against the device's real density |
+| [`dp2px`](dp2px/) | px ↔ dp ↔ sp converter — offline, or against the device's real density |
 | [`layoutlint`](layoutlint/) | UI hierarchy lint — touch targets, overlap, labels, from a uiautomator dump |
 | [`logstream`](logstream/) | Live Android log streamer - logcat, but actually nice |
 | [`perfpoll`](perfpoll/) | Per-app performance sampler over adb — CPU, RAM, battery drain, fps to CSV/JSON |
@@ -57,7 +57,7 @@ generated files are out of date with their sources.
 ├── rustfmt.toml
 ├── .github/
 │   └── workflows
-├── appctl/
+├── apkctl/
 │   ├── .METADATA.toml
 │   ├── Cargo.toml
 │   ├── LICENSE
@@ -69,7 +69,7 @@ generated files are out of date with their sources.
 │   ├── LICENSE
 │   ├── README.md
 │   └── src
-├── dpx/
+├── dp2px/
 │   ├── .METADATA.toml
 │   ├── Cargo.toml
 │   ├── LICENSE

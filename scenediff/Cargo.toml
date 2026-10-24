@@ -10,7 +10,7 @@ name = "scenediff"
 path = "src/main.rs"
 
 [dependencies]
-adbkit = { path = "../adbkit" }
+adbkit = { path = "../adbkit", version = "0.1.0" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 image = "0.25"

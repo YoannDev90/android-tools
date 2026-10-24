@@ -14,7 +14,7 @@ entrypoint = "adbkit/src/lib.rs"
 category = "library"
 tags = ["adb", "shared", "plumbing"]
 requires = { adb = "Android SDK platform-tools in PATH" }
-features = ["Serial auto-pick when a single device is connected", "list_serials for tools that act on every connected device", "shell_opt for commands whose failure is a normal outcome", "shell_timeout with hard kill (uiautomator dump hangs)", "exec_out for raw stdout (screencap)", "resolve_launcher: a package's launcher activity, shared by uitool, startperf and appctl", "uiautomator hierarchy parsing shared by the UI tools (roxmltree, testable without a device)", "wm density parsing for px↔dp conversion (override wins over physical)"]
+features = ["Serial auto-pick when a single device is connected", "list_serials for tools that act on every connected device", "shell_opt for commands whose failure is a normal outcome", "shell_timeout with hard kill (uiautomator dump hangs)", "exec_out for raw stdout (screencap)", "resolve_launcher: a package's launcher activity, shared by uitool, startperf and apkctl", "uiautomator hierarchy parsing shared by the UI tools (roxmltree, testable without a device)", "wm density parsing for px↔dp conversion (override wins over physical)"]
 dependencies = { anyhow = "1", roxmltree = "0.21" }
 tests = true
 source = { files = ["lib.rs", "hierarchy.rs", "../tests/fake_adb.rs"] }

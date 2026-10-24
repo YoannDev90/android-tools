@@ -27,7 +27,7 @@ pub fn pick_serial(explicit: Option<&str>) -> Result<String> {
 }
 
 /// Serials of every connected device in state `device` (`adb devices`)
-/// — for the tools that act on all of them at once (`appctl --all`).
+/// — for the tools that act on all of them at once (`apkctl --all`).
 pub fn list_serials() -> Result<Vec<String>> {
 	let out = Command::new("adb")
 		.arg("devices")

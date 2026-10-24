@@ -1,11 +1,11 @@
-# dpx
+# dp2px
 
 px ↔ dp ↔ sp converter for Android — offline, or against the density
 your device actually draws at.
 
 The arithmetic every Android dev ends up redoing in their head (or in a
 browser tab): how many pixels is that 48 dp touch target, and how many
-dp is this 1080 px screenshot really. `dpx` answers both, and with
+dp is this 1080 px screenshot really. `dp2px` answers both, and with
 `--device` it asks the device instead of assuming a density — the
 `wm density` override wins over the physical number, because that is
 what the UI draws at.
@@ -21,19 +21,19 @@ what the UI draws at.
 ```bash
 cargo install --path .        # from this folder
 # or, from the repository root:
-cargo install --path dpx
+cargo install --path dp2px
 ```
 
 ## Usage
 
 ```bash
-dpx 1080                              # 1080 px → dp at the default 160 dpi (mdpi)
-dpx 1080 --device                     # …at the connected device's real density
-dpx 48 --from dp --to px --density 440  # 48 dp at 440 dpi → px
-dpx 48 --from dp --device             # 48 dp on your device → px
-dpx 48 72 96 --from dp --to px --device  # several values, one result per line
-dpx 16 --from sp --to px --font-scale 1.15  # sp with a custom font scale
-dpx 1080 --device --font-scale 1.3    # …sp result honours the font scale too
+dp2px 1080                              # 1080 px → dp at the default 160 dpi (mdpi)
+dp2px 1080 --device                     # …at the connected device's real density
+dp2px 48 --from dp --to px --density 440  # 48 dp at 440 dpi → px
+dp2px 48 --from dp --device             # 48 dp on your device → px
+dp2px 48 72 96 --from dp --to px --device  # several values, one result per line
+dp2px 16 --from sp --to px --font-scale 1.15  # sp with a custom font scale
+dp2px 1080 --device --font-scale 1.3    # …sp result honours the font scale too
 ```
 
 `-s, --serial <SERIAL>` selects a device; with exactly one device

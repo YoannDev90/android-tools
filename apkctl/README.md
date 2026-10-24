@@ -1,12 +1,12 @@
-# appctl
+# apkctl
 
 App lifecycle over adb — clear data, restart, kill, uninstall, open
 deep links — on one device or every connected one.
 
 The actions IntelliJ's [adb-idea](https://github.com/pbreault/adb-idea)
-plugin puts behind a click, as a CLI: `appctl kill com.foo` between two
-tests, `appctl --all clear-data com.foo` before a demo across the whole
-device pool, `appctl open myapp://detail/7` to poke a deep link. Every
+plugin puts behind a click, as a CLI: `apkctl kill com.foo` between two
+tests, `apkctl --all clear-data com.foo` before a demo across the whole
+device pool, `apkctl open myapp://detail/7` to poke a deep link. Every
 action is one `adb shell` command — nothing gets installed on the
 device.
 
@@ -20,22 +20,22 @@ device.
 ```bash
 cargo install --path .        # from this folder
 # or, from the repository root:
-cargo install --path appctl
+cargo install --path apkctl
 ```
 
 ## Usage
 
 ```bash
-appctl kill com.example.app               # force-stop (not running = OK)
-appctl clear-data com.example.app         # pm clear: data + cache
-appctl clear-cache com.example.app        # pm trim-caches 0
-appctl restart com.example.app            # force-stop + relaunch, launcher resolved
-appctl uninstall com.example.app          # pm uninstall
-appctl settings com.example.app           # open App info in Settings
-appctl open 'myapp://detail/7'            # am start -a VIEW -d
+apkctl kill com.example.app               # force-stop (not running = OK)
+apkctl clear-data com.example.app         # pm clear: data + cache
+apkctl clear-cache com.example.app        # pm trim-caches 0
+apkctl restart com.example.app            # force-stop + relaunch, launcher resolved
+apkctl uninstall com.example.app          # pm uninstall
+apkctl settings com.example.app           # open App info in Settings
+apkctl open 'myapp://detail/7'            # am start -a VIEW -d
 
-appctl --all kill com.example.app         # every connected device
-appctl -s SERIAL1 -s SERIAL2 restart com.example.app
+apkctl --all kill com.example.app         # every connected device
+apkctl -s SERIAL1 -s SERIAL2 restart com.example.app
 ```
 
 | Subcommand | Device command | Notes |
