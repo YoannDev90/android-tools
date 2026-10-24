@@ -1,0 +1,30 @@
+# Dependabot: keeps the Rust dependency tree and the CI actions current.
+# Docs: https://docs.github.com/code-security/dependabot
+#
+# PRs open weekly; see RELEASING.md for how a versioned change ships.
+version: 2
+updates:
+  # The whole cargo workspace: one entry at the root covers every crate.
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    # Cargo updates are reviewed one by one: a semver bump can change CLI
+    # behaviour (clap) or image output (image, usvg/resvg), which the test
+    # suite must see on its own.
+    groups:
+      patch-updates:
+        update-types: ["patch"]
+
+  # GitHub Actions: grouped so the workflow pins move in one PR.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns: ["*"]
