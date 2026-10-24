@@ -1,0 +1,76 @@
+# .deb / .rpm packages, attached to the GitHub Release that dist created.
+#
+# Triggered by the release event, so it runs after release.yml has uploaded
+# the archives. Builds static musl binaries natively on each runner arch —
+# no C dependencies in the workspace, so musl-tools is enough.
+name: Packages
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  deb-rpm:
+    name: ${{ matrix.deb_arch }} deb+rpm
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+            deb_arch: amd64
+            nfpm_arch: x86_64
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            deb_arch: arm64
+            nfpm_arch: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install musl toolchain
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Build static binaries
+        run: cargo build --release --workspace --target ${{ matrix.target }}
+
+      - name: Install nfpm
+        env:
+          NFPM_VERSION: "2.43.1"
+        run: |
+          curl -sL "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_Linux_${{ matrix.nfpm_arch }}.tar.gz" \
+            | tar xz -C /tmp nfpm
+          sudo install /tmp/nfpm /usr/local/bin/nfpm
+          nfpm --version
+
+      - name: Generate nfpm configs
+        run: |
+          python3 scripts/make_nfpm.py /tmp/nfpm \
+            "${GITHUB_REF_NAME#v}" \
+            "target/${{ matrix.target }}/release" \
+            "${{ matrix.deb_arch }}"
+
+      - name: Build .deb and .rpm
+        run: |
+          mkdir -p dist-packages
+          for cfg in /tmp/nfpm/*.nfpm.yaml; do
+            nfpm package --config "$cfg" --packager deb --target "dist-packages/"
+            nfpm package --config "$cfg" --packager rpm --target "dist-packages/"
+          done
+          ls -la dist-packages/
+
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-packages/*

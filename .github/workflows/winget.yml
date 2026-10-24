@@ -1,0 +1,38 @@
+# Submit winget manifests for each tool, right after a release is published.
+#
+# Requires the WINGET_TOKEN secret: a PAT from an account that has forked
+# microsoft/winget-pkgs, with workflow scope (the action pushes the manifest
+# branch to your fork and opens the PR upstream).
+name: Publish winget
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  winget:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - apkctl
+          - assetgen
+          - dp2px
+          - layoutlint
+          - logstream
+          - perfpoll
+          - resclean
+          - scenediff
+          - startperf
+          - svg2vd
+          - uitool
+    steps:
+      - uses: vedantmgoyal9/winget-releaser@main
+        with:
+          identifier: YoannDev90.${{ matrix.package }}
+          installers-regex: '^${{ matrix.package }}-x86_64-pc-windows-msvc\.zip$'
+          token: ${{ secrets.WINGET_TOKEN }}

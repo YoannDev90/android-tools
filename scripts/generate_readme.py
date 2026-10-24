@@ -15,7 +15,7 @@ def render_layout(root_dir):
     tools = []
     if os.path.isfile(os.path.join(root_dir, "index.json")):
         with open(os.path.join(root_dir, "index.json"), encoding="utf-8") as f:
-            tools = [t["path"] for t in json.load(f)["tools"]]
+            tools = [t for t in json.load(f)["tools"] if t.get("category") != "library"]
 
     entries = []
     for name in ROOT_FILES:
@@ -76,6 +76,40 @@ def generate_readme(root_dir, output_path):
     if "device" in reqs:
         lines.append(f"- **Device**: {reqs['device']}")
     lines.append("")
+
+    # Install (distribution channels set up in RELEASING.md)
+    lines += [
+        "## Install",
+        "",
+        "Binaries for Linux (musl, any distro), Windows and macOS are attached to",
+        "each [release](https://github.com/YoannDev90/android-tools/releases). Pick",
+        "a tool, then:",
+        "",
+        "```bash",
+        "# Linux / macOS — detects OS and arch, installs to ~/.local/bin:",
+        "curl --proto '=https' --tlsv1.2 -LsSf \\",
+        "  https://github.com/YoannDev90/android-tools/releases/latest/download/apkctl-installer.sh | sh",
+        "",
+        "# Windows (PowerShell):",
+        "irm https://github.com/YoannDev90/android-tools/releases/latest/download/apkctl-installer.ps1 | iex",
+        "",
+        "# macOS / Linuxbrew:",
+        "brew install YoannDev90/homebrew-tap/apkctl",
+        "",
+        "# Debian / Ubuntu (.deb) and Fedora / RHEL (.rpm) attached to the release:",
+        "sudo apt install ./apkctl_*_amd64.deb",
+        "",
+        "# From crates.io (needs Rust):",
+        "cargo install apkctl",
+        "",
+        "# Windows package manager:",
+        "winget install YoannDev90.apkctl",
+        "```",
+        "",
+        "Replace `apkctl` with any tool from the table above. See",
+        "[`RELEASING.md`](RELEASING.md) for the full release and packaging chain.",
+        "",
+    ]
 
     # Build
     lines.append("## Build")

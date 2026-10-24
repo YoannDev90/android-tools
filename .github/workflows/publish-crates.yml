@@ -1,0 +1,58 @@
+# Publish every crate to crates.io, right after a release is published.
+#
+# adbkit goes first and each publish is retried until crates.io indexes it,
+# because the tools depend on the registry copy of adbkit — a path dep alone
+# won't satisfy `cargo publish`'s verification build.
+#
+# Requires the CARGO_REGISTRY_TOKEN secret (crates.io API token).
+name: Publish crates.io
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Check tag matches crate versions
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for crate in adbkit apkctl assetgen dp2px layoutlint logstream perfpoll resclean scenediff startperf svg2vd uitool; do
+            crate_version=$(cargo metadata --no-deps --format-version 1 \
+              | python3 -c "import json,sys; pkgs=json.load(sys.stdin)['packages']; print(next(p['version'] for p in pkgs if p['name']=='$crate'))")
+            if [ "$crate_version" != "$version" ]; then
+              echo "::error::$crate is at $crate_version but the release tag says $version"
+              exit 1
+            fi
+          done
+          echo "all crates at $version"
+
+      - name: Publish crates (adbkit first, retry on index lag)
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          publish() {
+            crate=$1
+            for attempt in $(seq 1 12); do
+              if cargo publish -p "$crate" --allow-dirty; then
+                echo "$crate published"
+                return 0
+              fi
+              echo "$crate: not indexed yet, retry $attempt/12 in 15s"
+              sleep 15
+            done
+            echo "::error::failed to publish $crate"
+            return 1
+          }
+          publish adbkit
+          for crate in apkctl assetgen dp2px layoutlint logstream perfpoll resclean scenediff startperf svg2vd uitool; do
+            publish "$crate" || exit 1
+          done
