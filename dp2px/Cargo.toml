@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 description = "px ↔ dp ↔ sp converter — offline, or against the device's real density"
 license = "MIT"
+repository.workspace = true
+homepage.workspace = true
 
 [[bin]]
 name = "dp2px"

@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 description = "UI hierarchy lint — touch targets, overlap, labels, from a uiautomator dump"
 license = "MIT"
+repository.workspace = true
+homepage.workspace = true
 
 [[bin]]
 name = "layoutlint"

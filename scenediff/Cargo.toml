@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 description = "Visual regression diff of two screenshots, files or device captures"
 license = "MIT"
+repository.workspace = true
+homepage.workspace = true
 
 [[bin]]
 name = "scenediff"

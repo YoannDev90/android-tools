@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 description = "Shared adb helpers for the android-tools workspace"
 license = "MIT"
+repository.workspace = true
+homepage.workspace = true
 
 [dependencies]
 anyhow = "1"

@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 description = "App lifecycle over adb — clear data/cache, restart, kill, uninstall, deep links, one or every device"
 license = "MIT"
+repository.workspace = true
+homepage.workspace = true
 
 [[bin]]
 name = "apkctl"

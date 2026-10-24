@@ -2,6 +2,15 @@
 resolver = "2"
 members = ["adbkit", "apkctl", "assetgen", "dp2px", "layoutlint", "logstream", "perfpoll", "resclean", "scenediff", "startperf", "svg2vd", "uitool"]
 
+[workspace.package]
+repository = "https://github.com/YoannDev90/android-tools"
+homepage = "https://github.com/YoannDev90/android-tools"
+
 [profile.release]
 lto = true
 strip = true
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"

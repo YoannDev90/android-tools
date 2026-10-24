@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 description = "App cold/warm start benchmark over adb"
 license = "MIT"
+repository.workspace = true
+homepage.workspace = true
 
 [[bin]]
 name = "startperf"

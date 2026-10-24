@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 description = "Per-app perf sampler over adb — CPU, RAM, battery drain, fps to CSV"
 license = "MIT"
+repository.workspace = true
+homepage.workspace = true
 
 [[bin]]
 name = "perfpoll"

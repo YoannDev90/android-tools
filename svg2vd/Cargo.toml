@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 description = "SVG → Android VectorDrawable XML converter — pure, no device, no Android SDK"
 license = "MIT"
+repository.workspace = true
+homepage.workspace = true
 
 [[bin]]
 name = "svg2vd"
