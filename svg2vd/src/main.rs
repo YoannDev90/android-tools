@@ -1,15 +1,13 @@
 //! `svg2vd` — an SVG in, an Android VectorDrawable XML out. Pure
 //! conversion: no device, no Android SDK, nothing but bytes.
 
-mod vd;
-
 use std::io::Read;
 use std::path::PathBuf;
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 
-use vd::Converted;
+use svg2vd::vd::{self, Converted};
 
 #[derive(Parser, Debug)]
 #[command(name = "svg2vd", about = "Convert an SVG into an Android VectorDrawable XML", version)]

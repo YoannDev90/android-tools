@@ -1,0 +1,20 @@
+[package]
+name = "iconkit"
+version = "0.1.0"
+edition = "2021"
+description = "Material Symbols icon search and downloader — browse fonts.google.com/icons, fetch SVG or VectorDrawable"
+license = "MIT"
+
+[metadata]
+long_description = "The fonts.google.com/icons shelf on the command line: Google's official Material Symbols metadata (3932 icons with categories, tags, popularity and available sizes) is parsed once and cached under $XDG_CACHE_HOME/iconkit, so search and filtering are instant and offline — words match the name, a tag or a category with exact > prefix > substring ranking and popularity tie-breaks, --category/--tag filters OR within themselves and AND across, and all four styles (filled, outlined, rounded, sharp) are one repeatable --style away. `get` is the only command that touches the network: it downloads the exact static SVG fonts.google.com serves at the icon's own size (a wrong size fails with the list of real ones, never a 404), or, with --vd, runs it through the workspace's svg2vd emitter into a ready-to-use res/drawable XML with Android-safe resource names (13mp → ic_13mp) and style suffixes when several styles land in one directory. `info` and `categories` expose the vocabulary, --json serves scripts, and the exit code is 0 only when everything requested was written — misses report on stderr and exit 2 without cancelling the downloads that worked."
+readme = "iconkit/README.md"
+license_file = "iconkit/LICENSE"
+manifest = "iconkit/Cargo.toml"
+entrypoint = "iconkit/src/main.rs"
+category = "graphics"
+tags = ["android", "icons", "material-symbols", "search", "svg", "vector-drawable", "cli", "offline-cache"]
+requires = { network = "first run downloads the catalog from fonts.google.com, later searches are offline" }
+features = ["Search: words match name, tags or categories — exact > prefix > substring, popularity breaks ties", "Filters: --category / --tag, repeatable, OR within a filter, AND across, case-insensitive both sides", "Four styles (filled, outlined default, rounded, sharp) via a repeatable --style", "Local catalog cache in $XDG_CACHE_HOME/iconkit; --refresh re-downloads, corrupt caches self-heal", "SVG download from fonts.gstatic.com at the icon's own size — a wrong size fails with the real list, never a 404", "--vd emits res/drawable XML through svg2vd, with Android-safe names (13mp → ic_13mp) and style suffixes", "info / categories for browsing, --json for search and info", "Exit 0 only when everything was written: misses and errors exit 2, successful downloads are kept"]
+dependencies = { anyhow = "1", clap = "4", serde = "1 (derive)", serde_json = "1", svg2vd = "workspace path (lib)", ureq = "3" }
+tests = true
+source = { files = ["main.rs", "catalog.rs", "search.rs", "net.rs"] }

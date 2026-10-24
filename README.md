@@ -8,6 +8,7 @@ adb-based tools for Android development, written in Rust.
 | [`apkctl`](apkctl/) | App lifecycle over adb — clear data/cache, restart, kill, uninstall, deep links, one or every device |
 | [`assetgen`](assetgen/) | Android density asset generator — launcher, notification, adaptive, 9-patch, debug badges from one source PNG |
 | [`dp2px`](dp2px/) | px ↔ dp ↔ sp converter — offline, or against the device's real density |
+| [`iconkit`](iconkit/) | Material Symbols icon search and downloader — browse fonts.google.com/icons, fetch SVG or VectorDrawable |
 | [`layoutlint`](layoutlint/) | UI hierarchy lint — touch targets, overlap, labels, from a uiautomator dump |
 | [`logstream`](logstream/) | Live Android log streamer - logcat, but actually nice |
 | [`perfpoll`](perfpoll/) | Per-app performance sampler over adb — CPU, RAM, battery drain, fps to CSV/JSON |
@@ -106,7 +107,10 @@ generated files are out of date with their sources.
 │   ├── README.md
 │   └── src
 ├── iconkit/
+│   ├── .METADATA.toml
 │   ├── Cargo.toml
+│   ├── LICENSE
+│   ├── README.md
 │   └── src
 ├── layoutlint/
 │   ├── .METADATA.toml

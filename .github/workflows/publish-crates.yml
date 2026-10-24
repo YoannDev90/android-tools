@@ -25,7 +25,7 @@ jobs:
       - name: Check tag matches crate versions
         run: |
           version="${GITHUB_REF_NAME#v}"
-          for crate in adbkit apkctl assetgen dp2px layoutlint logstream perfpoll resclean scenediff startperf svg2vd uitool; do
+          for crate in adbkit apkctl assetgen dp2px layoutlint logstream perfpoll resclean scenediff startperf svg2vd iconkit uitool; do
             crate_version=$(cargo metadata --no-deps --format-version 1 \
               | python3 -c "import json,sys; pkgs=json.load(sys.stdin)['packages']; print(next(p['version'] for p in pkgs if p['name']=='$crate'))")
             if [ "$crate_version" != "$version" ]; then
@@ -53,6 +53,7 @@ jobs:
             return 1
           }
           publish adbkit
-          for crate in apkctl assetgen dp2px layoutlint logstream perfpoll resclean scenediff startperf svg2vd uitool; do
+          # svg2vd before iconkit: iconkit depends on the published copy.
+          for crate in apkctl assetgen dp2px layoutlint logstream perfpoll resclean scenediff startperf svg2vd iconkit uitool; do
             publish "$crate" || exit 1
           done

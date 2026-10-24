@@ -1,0 +1,24 @@
+[package]
+name = "iconkit"
+version = "0.1.0"
+edition = "2021"
+description = "Material Symbols icon search and downloader — browse fonts.google.com/icons, fetch SVG or VectorDrawable"
+license = "MIT"
+repository.workspace = true
+homepage.workspace = true
+
+[[bin]]
+name = "iconkit"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# The SVG → VectorDrawable emitter next door: `get --vd` is exactly it.
+# `version` keeps the crate publishable to crates.io, `path` keeps the
+# workspace build local.
+svg2vd = { version = "0.1", path = "../svg2vd" }
+# Sync HTTP with rustls — a CLI wants no async runtime for two GETs.
+ureq = "3"

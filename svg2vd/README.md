@@ -79,7 +79,8 @@ cargo clippy
 
 Source layout: `vd.rs` (the emitter — tree walk, `pathData`
 formatting, `#AARRGGBB` colors, all unit-tested against inline SVGs),
-`main.rs` (CLI, file/stdin/stdout plumbing).
+`main.rs` (CLI, file/stdin/stdout plumbing), `lib.rs` (the library
+face, so `iconkit` can convert without shelling out).
 
 ## License
 

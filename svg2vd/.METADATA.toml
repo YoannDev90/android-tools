@@ -17,4 +17,4 @@ requires = {}
 features = ["Shapes to pathData: rect, circle, ellipse, line, polyline, polygon, path", "Fills: solid color, fill-opacity folded into the #AARRGGBB alpha, evenOdd fillType", "Strokes: color, width, cap, join, miterlimit, dasharray/offset — renderer defaults omitted", "Transforms baked into the coordinates: rotation, skew and scale stay representable", "clip-path: a clipped group becomes <group> with <clip-path android:pathData>", "Gradients fall back to their first stop color, patterns to black — with a warning, never fatal", "12 pure tests, no device: the first fully pure crate of the workspace"]
 dependencies = { usvg = "0.48 (default-features off)", anyhow = "1", clap = "4" }
 tests = true
-source = { files = ["main.rs", "vd.rs"] }
+source = { files = ["main.rs", "vd.rs", "lib.rs"] }

@@ -7,6 +7,10 @@ license = "MIT"
 repository.workspace = true
 homepage.workspace = true
 
+[lib]
+name = "svg2vd"
+path = "src/lib.rs"
+
 [[bin]]
 name = "svg2vd"
 path = "src/main.rs"
