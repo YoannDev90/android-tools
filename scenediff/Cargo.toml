@@ -15,6 +15,9 @@ path = "src/main.rs"
 adbkit = { path = "../adbkit", version = "0.1.0" }
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
-image = "0.25"
+# default-features off drops AVIF/EXR/GIF/TIFF/etc.: the encoder pulls in
+# rav1e, which drags libfuzzer-sys and a C/asm build for nothing — we only
+# touch PNG (save+decode), JPEG (encode+decode) and WebP (save).
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

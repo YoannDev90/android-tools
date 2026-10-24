@@ -14,7 +14,10 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1"
 clap = { version = "4", features = ["derive"] }
-image = "0.25"
+# default-features off drops AVIF/EXR/GIF/TIFF/etc.: the encoder pulls in
+# rav1e, which drags libfuzzer-sys and a C/asm build for nothing — we only
+# touch PNG (save+decode), JPEG (encode+decode) and WebP (save).
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
 resvg = "0.48.1"
 tiny-skia = "0.12.0"
 usvg = "0.48.1"

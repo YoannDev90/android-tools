@@ -27,7 +27,7 @@ fn default_out() -> PathBuf {
 		.duration_since(std::time::UNIX_EPOCH)
 		.unwrap_or_default()
 		.as_millis();
-	PathBuf::from(format!("/tmp/uitool-{ms}.jpg"))
+	std::env::temp_dir().join(format!("uitool-{ms}.jpg"))
 }
 
 pub fn take(dev: &Adb, opts: &ShotOpts) -> Result<PathBuf> {

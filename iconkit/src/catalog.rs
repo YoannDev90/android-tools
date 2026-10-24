@@ -127,10 +127,19 @@ pub fn icon_url(style: Style, name: &str, size: u16) -> String {
 	)
 }
 
-/// Where the catalogs live: `$XDG_CACHE_HOME/iconkit`, else
-/// `~/.cache/iconkit` (absolute XDG paths only, per the spec; when
-/// neither variable exists, a plain `iconkit/` in the working directory).
+/// Where the catalogs live: `$XDG_CACHE_HOME/iconkit`, else `~/.cache/iconkit`
+/// on Unix, else `%LOCALAPPDATA%\iconkit` on Windows (absolute paths only, per
+/// the spec; when no home is resolvable, a plain `iconkit/` in the working
+/// directory).
 pub fn cache_root() -> PathBuf {
+	if cfg!(windows) {
+		if let Some(base) = std::env::var_os("LOCALAPPDATA") {
+			let p = PathBuf::from(&base);
+			if p.is_absolute() {
+				return p.join("iconkit");
+			}
+		}
+	}
 	let base = std::env::var_os("XDG_CACHE_HOME")
 		.map(PathBuf::from)
 		.filter(|p| p.is_absolute())
