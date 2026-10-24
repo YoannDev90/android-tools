@@ -1,0 +1,32 @@
+# cargo-dist configuration — cross-platform release automation.
+# Docs: https://opensource.axo.dev/cargo-dist/
+#
+# `dist generate` regenerates .github/workflows/release.yml from this file.
+# `dist plan` shows what a release would contain, without publishing.
+[workspace]
+members = ["cargo:."]
+
+[dist]
+cargo-dist-version = "0.33.1"
+rust-toolchain-version = "1.99"
+cargo-toml-path = "Cargo.toml"
+
+# Static musl on Linux: one binary runs on every distro, no glibc surprises.
+targets = [
+    "x86_64-unknown-linux-musl",
+    "aarch64-unknown-linux-musl",
+    "x86_64-pc-windows-msvc",
+    "aarch64-pc-windows-msvc",
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+]
+
+# curl | bash and irm | iex installers, both arch-aware.
+installers = ["shell", "powershell"]
+
+# Homebrew tap fed automatically on each release (needs HOMEBREW_TAP_TOKEN).
+tap = "YoannDev90/homebrew-tap"
+publish-jobs = ["homebrew"]
+
+# CI runs `dist plan` on PRs so config breakage is caught before tagging.
+pr-run-mode = "plan"
