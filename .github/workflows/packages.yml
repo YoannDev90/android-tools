@@ -47,19 +47,6 @@ jobs:
             nfpm_arch: arm64
     runs-on: ${{ matrix.runner }}
     steps:
-      - name: PROBE permissions (temporaire)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "--- default_workflow_permissions ---"
-          gh api repos/$GITHUB_REPOSITORY/actions/permissions/workflow || true
-          echo "--- PATCH release 423428267 ---"
-          gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/423428267" \
-            -f name="v0.1.0" --jq '"PATCH OK id=\(.id)"' \
-            && echo "PROBE: ecriture OK" \
-            || echo "PROBE: ecriture REFUSEE"
-          exit 1
-
       - name: Resolve release tag
         id: reltag
         env:
@@ -118,9 +105,13 @@ jobs:
           done
           ls -la dist-packages/
 
+      # `gh release upload` instead of softprops/action-gh-release: that action
+      # PATCHes the release after finding it, and GitHub answers that call with
+      # 403 "Resource not accessible by integration" even though a probe with
+      # this very token wrote to the same release successfully. Uploading
+      # assets needs no PATCH at all.
       - name: Attach to release
-        uses: softprops/action-gh-release@v3
-        with:
-          # github.ref is the default branch under workflow_run, not the tag.
-          tag_name: ${{ steps.reltag.outputs.tag }}
-          files: dist-packages/*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release upload "${{ steps.reltag.outputs.tag }}" dist-packages/* --clobber
