@@ -1,19 +1,37 @@
-# .deb / .rpm packages, attached to the GitHub Release that dist created.
+# Triggered by the Release workflow's *completion*, not by the `release` event:
+# release.yml creates the release with GITHUB_TOKEN, and GitHub never fires a
+# workflow run for an event caused by GITHUB_TOKEN (only workflow_dispatch and
+# repository_dispatch are exempt) — so `on: release:` would never run at all.
+# Waiting for the Release run to finish also guarantees the release exists
+# before softprops/action-gh-release attaches to it, and before dist's own
+# `gh release create` runs.
 #
-# Triggered by the release event, so it runs after release.yml has uploaded
-# the archives. Builds static musl binaries natively on each runner arch —
-# no C dependencies in the workspace, so musl-tools is enough.
+# Builds static musl binaries natively on each runner arch — no C dependencies
+# in the workspace, so musl-tools is enough.
 name: Packages
 
 on:
-  release:
-    types: [published]
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build packages for (e.g. v0.1.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 jobs:
   deb-rpm:
+    # workflow_run also fires for Release's pull_request "plan" runs; only act
+    # on a tag push that actually succeeded.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
     name: ${{ matrix.deb_arch }} deb+rpm
     strategy:
       fail-fast: false
@@ -29,7 +47,21 @@ jobs:
             nfpm_arch: arm64
     runs-on: ${{ matrix.runner }}
     steps:
+      - name: Resolve release tag
+        id: reltag
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          RUN_TAG: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "tag=$INPUT_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$RUN_TAG" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.reltag.outputs.tag }}
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -55,9 +87,11 @@ jobs:
           nfpm --version
 
       - name: Generate nfpm configs
+        env:
+          RELEASE_TAG: ${{ steps.reltag.outputs.tag }}
         run: |
           python3 scripts/make_nfpm.py /tmp/nfpm \
-            "${GITHUB_REF_NAME#v}" \
+            "${RELEASE_TAG#v}" \
             "target/${{ matrix.target }}/release" \
             "${{ matrix.deb_arch }}"
 
@@ -73,4 +107,6 @@ jobs:
       - name: Attach to release
         uses: softprops/action-gh-release@v3
         with:
+          # github.ref is the default branch under workflow_run, not the tag.
+          tag_name: ${{ steps.reltag.outputs.tag }}
           files: dist-packages/*

@@ -1,19 +1,38 @@
 # Submit winget manifests for each tool, right after a release is published.
 #
+# Triggered by the Release workflow's *completion*, not by the `release` event:
+# release.yml creates the release with GITHUB_TOKEN, and GitHub never fires a
+# workflow run for an event caused by GITHUB_TOKEN (only workflow_dispatch and
+# repository_dispatch are exempt) — so `on: release:` would never run at all.
+# That also guarantees the .zip assets exist before winget-releaser hashes them.
+#
 # Requires the WINGET_TOKEN secret: a PAT from an account that has forked
 # microsoft/winget-pkgs, with workflow scope (the action pushes the manifest
 # branch to your fork and opens the PR upstream).
 name: Publish winget
 
 on:
-  release:
-    types: [published]
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to submit (e.g. v0.1.0)"
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   winget:
+    # workflow_run also fires for Release's pull_request "plan" runs; only act
+    # on a tag push that actually succeeded.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -35,4 +54,7 @@ jobs:
         with:
           identifier: YoannDev90.${{ matrix.package }}
           installers-regex: '^${{ matrix.package }}-x86_64-pc-windows-msvc\.zip$'
+          # Under workflow_run github.ref is the default branch, not the tag —
+          # the action would look for assets on a nonexistent "main" release.
+          release-tag: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.event.workflow_run.head_branch }}
           token: ${{ secrets.WINGET_TOKEN }}

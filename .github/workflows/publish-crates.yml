@@ -4,27 +4,62 @@
 # because the tools depend on the registry copy of adbkit — a path dep alone
 # won't satisfy `cargo publish`'s verification build.
 #
+# Triggered by the Release workflow's *completion*, not by the `release` event.
+# release.yml creates the release with GITHUB_TOKEN, and GitHub never fires a
+# workflow run for an event caused by GITHUB_TOKEN (only workflow_dispatch and
+# repository_dispatch are exempt) — so `on: release:` would never run at all.
+# workflow_dispatch is the manual escape hatch; pass the tag explicitly.
+#
 # Requires the CARGO_REGISTRY_TOKEN secret (crates.io API token).
 name: Publish crates.io
 
 on:
-  release:
-    types: [published]
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. v0.1.0)"
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   publish:
+    # workflow_run also fires for Release's pull_request "plan" runs; only act
+    # on a tag push that actually succeeded.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     steps:
+      - name: Resolve release tag
+        id: reltag
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          RUN_TAG: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "tag=$INPUT_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$RUN_TAG" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.reltag.outputs.tag }}
 
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Check tag matches crate versions
+        env:
+          RELEASE_TAG: ${{ steps.reltag.outputs.tag }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${RELEASE_TAG#v}"
           for crate in adbkit apkctl assetgen dp2px layoutlint logstream perfpoll resclean scenediff startperf svg2vd iconkit uitool; do
             crate_version=$(cargo metadata --no-deps --format-version 1 \
               | python3 -c "import json,sys; pkgs=json.load(sys.stdin)['packages']; print(next(p['version'] for p in pkgs if p['name']=='$crate'))")

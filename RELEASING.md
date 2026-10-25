@@ -50,9 +50,15 @@ For every tool (all of them, in lockstep — one version across the workspace):
 4. The chain runs by itself:
    - `release.yml` (dist) builds all targets, creates the GitHub Release with
      archives, checksums and installers, and pushes to the Homebrew tap.
-   - `packages.yml` builds `.deb`/`.rpm` and attaches them.
-   - `publish-crates.yml` publishes `adbkit` then every tool to crates.io.
-   - `winget.yml` opens the winget-pkgs PRs.
+   - Once that run finishes, `packages.yml` builds `.deb`/`.rpm` and attaches
+     them, `publish-crates.yml` publishes `adbkit` then every tool to
+     crates.io, and `winget.yml` opens the winget-pkgs PRs.
+
+   The three start on the Release run's **completion** (`workflow_run`), not on
+   `release: published`: dist creates the release with `GITHUB_TOKEN`, and
+   GitHub never fires a workflow for an event caused by `GITHUB_TOKEN` (only
+   `workflow_dispatch`/`repository_dispatch` are exempt). They therefore also
+   have a manual *Run workflow* entry point that takes the tag, e.g. `v0.1.0`.
 
 Preview a release without publishing: `dist plan`.
 
