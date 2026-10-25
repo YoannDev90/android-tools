@@ -11,7 +11,11 @@ members = ["cargo:."]
 # The preferred dist version to use in CI (Cargo.toml SemVer syntax)
 cargo-dist-version = "0.33.1"
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "aarch64-unknown-linux-musl", "aarch64-pc-windows-msvc", "x86_64-apple-darwin", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]
+# NOTE: aarch64-pc-windows-msvc intentionally absent — GitHub has no Windows ARM64
+# runner, so dist cross-compiles it in messense/cargo-xwin, whose clang-cl-style
+# CFLAGS (/imsvc) clash with ring 0.17.14, which forces plain `clang` on
+# windows+aarch64 (ring build.rs). Windows-on-ARM is a negligible share.
+targets = ["aarch64-apple-darwin", "aarch64-unknown-linux-musl", "x86_64-apple-darwin", "x86_64-unknown-linux-musl", "x86_64-pc-windows-msvc"]
 # The installers to generate for each app
 installers = ["shell", "powershell"]
 # A GitHub repo to push Homebrew formulas to
