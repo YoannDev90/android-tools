@@ -47,6 +47,19 @@ jobs:
             nfpm_arch: arm64
     runs-on: ${{ matrix.runner }}
     steps:
+      - name: PROBE permissions (temporaire)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "--- default_workflow_permissions ---"
+          gh api repos/$GITHUB_REPOSITORY/actions/permissions/workflow || true
+          echo "--- PATCH release 423428267 ---"
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/423428267" \
+            -f name="v0.1.0" --jq '"PATCH OK id=\(.id)"' \
+            && echo "PROBE: ecriture OK" \
+            || echo "PROBE: ecriture REFUSEE"
+          exit 1
+
       - name: Resolve release tag
         id: reltag
         env:
