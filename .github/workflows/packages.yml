@@ -89,8 +89,9 @@ jobs:
       - name: Generate nfpm configs
         env:
           RELEASE_TAG: ${{ steps.reltag.outputs.tag }}
+        # /tmp/nfpm is the nfpm *binary* (extracted above), not a directory.
         run: |
-          python3 scripts/make_nfpm.py /tmp/nfpm \
+          python3 scripts/make_nfpm.py /tmp/nfpm-configs \
             "${RELEASE_TAG#v}" \
             "target/${{ matrix.target }}/release" \
             "${{ matrix.deb_arch }}"
@@ -98,7 +99,7 @@ jobs:
       - name: Build .deb and .rpm
         run: |
           mkdir -p dist-packages
-          for cfg in /tmp/nfpm/*.nfpm.yaml; do
+          for cfg in /tmp/nfpm-configs/*.nfpm.yaml; do
             nfpm package --config "$cfg" --packager deb --target "dist-packages/"
             nfpm package --config "$cfg" --packager rpm --target "dist-packages/"
           done

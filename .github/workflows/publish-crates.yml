@@ -74,12 +74,22 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
+          log=$(mktemp)
           publish() {
             crate=$1
             for attempt in $(seq 1 12); do
-              if cargo publish -p "$crate" --allow-dirty; then
+              if cargo publish -p "$crate" --allow-dirty 2>&1 | tee "$log"; then
                 echo "$crate published"
                 return 0
+              fi
+              # HTTP 400 is a rejection, not a race (unverified email, bad
+              # metadata, version already taken) — retrying would only burn
+              # three minutes before failing anyway. Index lag surfaces as a
+              # version-resolution error with no status code, so it still
+              # falls through to the retry below.
+              if grep -q "(status 400 " "$log"; then
+                echo "::error::$crate was rejected by crates.io (HTTP 400) — retrying will not help"
+                return 1
               fi
               echo "$crate: not indexed yet, retry $attempt/12 in 15s"
               sleep 15
