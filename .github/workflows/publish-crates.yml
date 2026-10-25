@@ -73,25 +73,74 @@ jobs:
       - name: Publish crates (adbkit first, retry on index lag)
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          RELEASE_TAG: ${{ steps.reltag.outputs.tag }}
         run: |
           log=$(mktemp)
+
+          # This workflow is re-dispatchable: crates that made it out on an
+          # earlier attempt must count as done, not as a failure.
+          already_on_crates_io() {
+            local body
+            body=$(curl -sf -A "android-tools-ci/0.1" "https://crates.io/api/v1/crates/$1" || true)
+            printf '%s' "$body" | grep -q "\"num\":\"$2\""
+          }
+
           publish() {
             crate=$1
-            for attempt in $(seq 1 12); do
-              if cargo publish -p "$crate" --allow-dirty 2>&1 | tee "$log"; then
+            if already_on_crates_io "$crate" "${RELEASE_TAG#v}"; then
+              echo "$crate ${RELEASE_TAG#v} already on crates.io — skipping"
+              return 0
+            fi
+            for attempt in $(seq 1 15); do
+              # errexit off for the pipeline only: under pipefail cargo's
+              # non-zero would kill the script before PIPESTATUS is read.
+              set +e
+              cargo publish -p "$crate" --allow-dirty 2>&1 | tee "$log"
+              # tee's status, not cargo's — reading PIPESTATUS is the only way
+              # to get cargo's code back out of a pipeline.
+              status=${PIPESTATUS[0]}
+              set -e
+              if [ "$status" -eq 0 ]; then
                 echo "$crate published"
                 return 0
               fi
+              sed 's/\x1b\[[0-9;]*m//g' "$log" > "$log.clean"
+
               # HTTP 400 is a rejection, not a race (unverified email, bad
               # metadata, version already taken) — retrying would only burn
-              # three minutes before failing anyway. Index lag surfaces as a
-              # version-resolution error with no status code, so it still
-              # falls through to the retry below.
-              if grep -q "(status 400 " "$log"; then
+              # three minutes before failing anyway. "Already uploaded" is the
+              # exception: it means an earlier attempt got it out.
+              if grep -q "(status 400 " "$log.clean"; then
+                if grep -qi "already uploaded\|already published" "$log.clean"; then
+                  echo "$crate already on crates.io — skipping"
+                  return 0
+                fi
                 echo "::error::$crate was rejected by crates.io (HTTP 400) — retrying will not help"
                 return 1
               fi
-              echo "$crate: not indexed yet, retry $attempt/12 in 15s"
+
+              # HTTP 429: crates.io throttles how many *new* crates may be
+              # pushed inside a window and states exactly when it reopens.
+              # Sleep until then — burning 15s retries against a closed door
+              # only exhausts the attempt budget while it is still shut.
+              if grep -q "(status 429 " "$log.clean"; then
+                when=$(sed -n 's/.*try again after \(.*\) GMT.*/\1/p' "$log.clean" | tail -1)
+                if [ -n "$when" ] && resume_at=$(date -u -d "$when" +%s 2>/dev/null); then
+                  sleep_for=$(( resume_at - $(date -u +%s) + 20 ))
+                  if [ "$sleep_for" -gt 0 ]; then
+                    echo "rate-limited: crates.io until $when GMT, waiting ${sleep_for}s"
+                    sleep "$sleep_for"
+                    continue
+                  fi
+                fi
+                echo "rate-limited with no usable retry-after, backing off 60s"
+                sleep 60
+                continue
+              fi
+
+              # Index lag: a dependency landed moments ago and is not in the
+              # local index yet.
+              echo "$crate: not indexed yet, retry $attempt/15 in 15s"
               sleep 15
             done
             echo "::error::failed to publish $crate"
