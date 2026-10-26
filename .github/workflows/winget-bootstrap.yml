@@ -20,30 +20,48 @@ on:
         description: "Open the PR upstream (off = generate and print only)"
         type: boolean
         default: false
+      packages:
+        description: "Space/comma-separated subset to bootstrap (empty = all 12)"
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
 
 jobs:
+  # Resolves the requested subset into a matrix so the first submission can be
+  # kept small — opening a dozen brand-new identifiers at once on
+  # microsoft/winget-pkgs looks like spam to its maintainers.
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+    steps:
+      - id: set
+        env:
+          PACKAGES: ${{ inputs.packages }}
+        run: |
+          all="apkctl assetgen dp2px iconkit layoutlint logstream perfpoll resclean scenediff startperf svg2vd uitool"
+          chosen="${PACKAGES//,/ }"
+          if [ -z "${chosen// /}" ]; then chosen="$all"; fi
+          for p in $chosen; do
+            case " $all " in
+              *" $p "*) ;;
+              *) echo "::error::unknown package: $p"; exit 1 ;;
+            esac
+          done
+          CHOSEN="$chosen" python3 -c 'import json, os; print("matrix=" + json.dumps({"package": os.environ["CHOSEN"].split()}))' >> "$GITHUB_OUTPUT"
+          echo "bootstrap: $chosen"
+
   bootstrap:
+    needs: plan
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
       fail-fast: false
-      matrix:
-        package:
-          - apkctl
-          - assetgen
-          - dp2px
-          - iconkit
-          - layoutlint
-          - logstream
-          - perfpoll
-          - resclean
-          - scenediff
-          - startperf
-          - svg2vd
-          - uitool
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7
 
