@@ -102,14 +102,21 @@ jobs:
               return lines[-1] if lines else ""
 
           def key_for(recent, prompt):
+              # The hint is painted after its own '?', so slicing there stops a
+              # stale MultiSelect hint from leaking into the next prompt.
+              after_last_prompt = recent[recent.rfind("?"):]
               # A MultiSelect paints "→ to all" and refuses to submit until at
               # least one option is selected, so the arrow does both jobs.
-              if "to all" in recent:
+              if "to all" in after_last_prompt:
                   return b"\x1b[C\n"
+              # Validates its input, so an empty Enter is rejected — the alias
+              # has to be typed, and it is just the tool name.
+              if "Portable command alias" in prompt:
+                  return PKG.encode() + b"\n"
               # Submit, Edit, Exit — pick Exit so the PR is opened separately.
               if "What would you like to do" in prompt:
                   return b"\x1b[B\x1b[B\n"
-              # Text / Select: empty input is accepted (or skips, when optional).
+              # Text / Select: empty input is accepted there.
               return b"\n"
 
           def main():
