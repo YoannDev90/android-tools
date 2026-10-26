@@ -96,24 +96,29 @@ jobs:
           def visible(buf):
               return ANSI.sub(b"", buf).decode("utf-8", "replace")
 
-          def key_for(text):
-              tail = text[-600:]
-              # MultiSelect with a min-length validator: nothing is selected
-              # until space toggles the first entry.
-              if "nested files" in tail:
-                  return b" \n"
+          def prompt_line(text):
+              """The inquire question painted now: last line starting with '?'."""
+              lines = [ln for ln in text.splitlines() if ln.strip().startswith("?")]
+              return lines[-1] if lines else ""
+
+          def key_for(recent, prompt):
+              # A MultiSelect paints "→ to all" and refuses to submit until at
+              # least one option is selected, so the arrow does both jobs.
+              if "to all" in recent:
+                  return b"\x1b[C\n"
               # Submit, Edit, Exit — pick Exit so the PR is opened separately.
-              if "What would you like to do" in tail:
+              if "What would you like to do" in prompt:
                   return b"\x1b[B\x1b[B\n"
+              # Text / Select: empty input is accepted (or skips, when optional).
               return b"\n"
 
           def main():
               pid, fd = pty.fork()
               if pid == 0:
                   os.execvp(ARGV[0], ARGV)
-              buf, shown_at, sent, start = b"", time.time(), 0, time.time()
+              buf, mark, shown_at, sent, start = b"", 0, time.time(), 0, time.time()
               while True:
-                  if time.time() - start > 600 or sent > 60:
+                  if time.time() - start > 300 or sent > 40:
                       os.kill(pid, 9)
                       break
                   ready, _, _ = select.select([fd], [], [], 0.2)
@@ -126,12 +131,16 @@ jobs:
                           break
                       buf += chunk
                       shown_at = time.time()
-                  # A prompt is only answered once it has stopped redrawning,
-                  # and only if inquire has actually painted one.
-                  if sent < 60 and time.time() - shown_at > 1.5:
-                      text = visible(buf)
-                      if "? " in text:
-                          os.write(fd, key_for(text))
+                  # Answer only once the repaint has stopped, and only look at
+                  # bytes produced since the last key: the buffer still holds
+                  # every earlier prompt, which is what made the first attempt
+                  # keep sending spaces into a text field.
+                  if sent < 40 and time.time() - shown_at > 1.2:
+                      recent = visible(buf[mark:])
+                      prompt = prompt_line(recent)
+                      if prompt:
+                          os.write(fd, key_for(recent, prompt))
+                          mark = len(buf)
                           sent += 1
                           shown_at = time.time()
                   done, _ = os.waitpid(pid, os.WNOHANG)
