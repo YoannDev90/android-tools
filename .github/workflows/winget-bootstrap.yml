@@ -162,6 +162,19 @@ jobs:
 
           python3 /tmp/drive.py
 
+          # The release body is one entry per tool, so it describes 11 other
+          # packages beside this one — komac copies it verbatim into every
+          # manifest (~25 kB). The URL still points at it, so drop the dump.
+          python3 - <<'PY'
+          import pathlib, re
+
+          for f in pathlib.Path("/tmp/out").rglob("*.yaml"):
+              text = f.read_text()
+              stripped = re.sub(r"^ReleaseNotes:.*\n(?:[ \t].*\n|\n)*", "", text, flags=re.M)
+              if stripped != text:
+                  f.write_text(stripped)
+          PY
+
           echo "══════ manifests générés ══════"
           find /tmp/out -type f -print -exec cat {} \; 2>/dev/null || {
             echo "::error::aucune manifest générée"

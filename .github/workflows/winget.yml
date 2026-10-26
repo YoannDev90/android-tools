@@ -41,6 +41,7 @@ jobs:
           - apkctl
           - assetgen
           - dp2px
+          - iconkit
           - layoutlint
           - logstream
           - perfpoll
