@@ -1,0 +1,159 @@
+name: Winget bootstrap
+#
+# winget-releaser (winget.yml) can only UPDATE a package that already exists
+# upstream, so a brand-new identifier needs `komac new` once. That command is
+# interactive: no flag answers "which nested files", "install modes" or
+# "upgrade behaviour". A blind key sequence proved unreliable (the nested-file
+# MultiSelect swallows rejected Enters and starves the later prompts), so this
+# drives a PTY and answers by reading what is actually on screen.
+#
+# Generation writes manifests with --output and picks Exit, so nothing leaves
+# the runner until the submit step. `komac submit` then opens the PR.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to submit (e.g. v0.1.0)"
+        required: true
+        type: string
+      submit:
+        description: "Open the PR upstream (off = generate and print only)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - apkctl
+          - assetgen
+          - dp2px
+          - iconkit
+          - layoutlint
+          - logstream
+          - perfpoll
+          - resclean
+          - scenediff
+          - startperf
+          - svg2vd
+          - uitool
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install komac
+        run: |
+          curl -sL "https://github.com/russellbanks/Komac/releases/download/v2.17.1/komac-2.17.1-x86_64-unknown-linux-gnu.tar.gz" \
+            | tar xz -C /tmp
+          /tmp/komac --version
+
+      - name: Generate manifest (PTY)
+        env:
+          GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          PKG: ${{ matrix.package }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          DESC=$(python3 -c "
+          import json
+          d = json.load(open('index.json'))
+          print(next(x['description'] for x in d['tools'] if x['id'] == '$PKG'))")
+          export DESC
+
+          cat > /tmp/drive.py <<'PY'
+          import os, pty, re, select, time
+
+          ANSI = re.compile(rb'\x1b\[[0-9;?]*[A-Za-z]')
+          PKG = os.environ["PKG"]
+          TAG = os.environ["RELEASE_TAG"]
+          VER = TAG.lstrip("v")
+          REPO = "https://github.com/YoannDev90/android-tools"
+          DESC = os.environ["DESC"]
+
+          ARGV = [
+              "/tmp/komac", "new", f"YoannDev90.{PKG}",
+              "--version", VER,
+              "--urls", f"{REPO}/releases/download/{TAG}/{PKG}-x86_64-pc-windows-msvc.zip",
+              "--package-locale", "en-US",
+              "--publisher", "YoannDev90",
+              "--publisher-url", "https://github.com/YoannDev90",
+              "--package-name", PKG,
+              "--package-url", REPO,
+              "--author", "YoannDev90",
+              "--license", "MIT",
+              "--license-url", f"{REPO}/blob/main/LICENSE",
+              "--short-description", DESC,
+              "--description", DESC,
+              "--moniker", PKG,
+              "--output", "/tmp/out",
+          ]
+
+          def visible(buf):
+              return ANSI.sub(b"", buf).decode("utf-8", "replace")
+
+          def key_for(text):
+              tail = text[-600:]
+              # MultiSelect with a min-length validator: nothing is selected
+              # until space toggles the first entry.
+              if "nested files" in tail:
+                  return b" \n"
+              # Submit, Edit, Exit — pick Exit so the PR is opened separately.
+              if "What would you like to do" in tail:
+                  return b"\x1b[B\x1b[B\n"
+              return b"\n"
+
+          def main():
+              pid, fd = pty.fork()
+              if pid == 0:
+                  os.execvp(ARGV[0], ARGV)
+              buf, shown_at, sent, start = b"", time.time(), 0, time.time()
+              while True:
+                  if time.time() - start > 600 or sent > 60:
+                      os.kill(pid, 9)
+                      break
+                  ready, _, _ = select.select([fd], [], [], 0.2)
+                  if ready:
+                      try:
+                          chunk = os.read(fd, 65536)
+                      except OSError:
+                          break
+                      if not chunk:
+                          break
+                      buf += chunk
+                      shown_at = time.time()
+                  # A prompt is only answered once it has stopped redrawning,
+                  # and only if inquire has actually painted one.
+                  if sent < 60 and time.time() - shown_at > 1.5:
+                      text = visible(buf)
+                      if "? " in text:
+                          os.write(fd, key_for(text))
+                          sent += 1
+                          shown_at = time.time()
+                  done, _ = os.waitpid(pid, os.WNOHANG)
+                  if done:
+                      break
+              print(f"--- keys sent: {sent} ---")
+              print("--- transcript tail ---")
+              print(visible(buf)[-3000:])
+
+          main()
+          PY
+
+          python3 /tmp/drive.py
+
+          echo "══════ manifests générés ══════"
+          find /tmp/out -type f -print -exec cat {} \; 2>/dev/null || {
+            echo "::error::aucune manifest générée"
+            exit 1
+          }
+
+      - name: Submit PR
+        if: ${{ inputs.submit }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: /tmp/komac submit /tmp/out -y --token "$GITHUB_TOKEN"
