@@ -8,7 +8,9 @@ from urllib.parse import quote
 ROOT_FILES = ["Cargo.toml", "Cargo.lock", "index.json", "stats.json", "README.md", "LICENSE", "rustfmt.toml"]
 ROOT_DIRS = ["adbkit", "logstream", "startperf", "uitool", "scripts"]
 # Personal scratch notes / local tooling — not part of the generated project docs.
-EXCLUDED = {"Ideas.md", ".gitignore", ".git", "target"}
+# __pycache__ and target are build artifacts: listing them makes the committed
+# README depend on whether the generator happened to be run after a build.
+EXCLUDED = {"Ideas.md", ".gitignore", ".git", "target", "__pycache__"}
 
 # GitHub Releases + crates.io, merged per tool by scripts/generate_stats.py and
 # refreshed by .github/workflows/stats.yml. shields.io polls this file on every

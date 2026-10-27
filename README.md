@@ -175,7 +175,6 @@ generated files are out of date with their sources. Only
 │   ├── README.md
 │   └── src
 └── scripts/
-    ├── __pycache__
     ├── generate_index.py
     ├── generate_readme.py
     ├── generate_stats.py
