@@ -3,30 +3,31 @@
 
 import json
 import os
+from urllib.parse import quote
 
-ROOT_FILES = ["Cargo.toml", "Cargo.lock", "index.json", "README.md", "LICENSE", "rustfmt.toml"]
+ROOT_FILES = ["Cargo.toml", "Cargo.lock", "index.json", "stats.json", "README.md", "LICENSE", "rustfmt.toml"]
 ROOT_DIRS = ["adbkit", "logstream", "startperf", "uitool", "scripts"]
 # Personal scratch notes / local tooling — not part of the generated project docs.
 EXCLUDED = {"Ideas.md", ".gitignore", ".git", "target"}
 
-# Live shields.io counters. Nothing numeric may be written into README.md:
-# CI regenerates it and fails on `git diff --exit-code`, so a baked-in count
-# would go stale on the next download. shields re-fetches on every render.
-RELEASES = "https://img.shields.io/github/downloads/YoannDev90/android-tools/total"
-# shields has no crates.io aggregate (crates.io has no workspace endpoint), so
-# this is the workspace's shared library — the crate every tool pulls in.
-CRATES_IO = "https://img.shields.io/crates/d/adbkit"
+# GitHub Releases + crates.io, merged per tool by scripts/generate_stats.py and
+# refreshed by .github/workflows/stats.yml. shields.io polls this file on every
+# render, so the URLs below stay constant and README generation remains
+# offline — CI regenerates the README and fails when it differs, so no count
+# may ever be baked into the file itself.
+STATS_JSON = "https://raw.githubusercontent.com/YoannDev90/android-tools/main/stats.json"
 
 
-def render_badges():
-    """The two distribution counters, each linking to the page it counts."""
-    return "\n".join(
-        [
-            f"[![GitHub releases]({RELEASES}?label=GitHub%20releases)]"
-            f"(https://github.com/YoannDev90/android-tools/releases)",
-            f"[![crates.io]({CRATES_IO}?label=crates.io)]"
-            f"(https://crates.io/crates/adbkit)",
-        ]
+def tool_badge(tool):
+    """Live download counter for one tool, GitHub releases and crates.io added
+    together. for-the-badge uppercases the label — that is the style's own
+    look, not a bug in the query."""
+    return (
+        "https://img.shields.io/badge/dynamic/json"
+        f"?url={quote(STATS_JSON, safe='')}"
+        f"&query=$.tools.{tool}.total"
+        f"&label={tool}"
+        "&style=for-the-badge"
     )
 
 
@@ -75,16 +76,19 @@ def generate_readme(root_dir, output_path):
     reqs = index.get("requirements", {})
     build = index.get("build", {})
 
-    lines = [f"# {name}", "", description, "", render_badges(), ""]
+    lines = [f"# {name}", "", description, ""]
 
-    # Tools table
+    # Tools table — one live download counter per tool (GitHub + crates.io).
     if tools:
         lines += [
-            "| Crate | Description |",
-            "|-------|-------------|",
+            "| Crate | Description | Downloads |",
+            "|-------|-------------|-----------|",
         ]
         for t in tools:
-            lines.append(f"| [`{t['name']}`]({t['path']}/) | {t['description']} |")
+            lines.append(
+                f"| [`{t['name']}`]({t['path']}/) | {t['description']} | "
+                f"![{t['name']}]({tool_badge(t['name'])}) |"
+            )
         lines.append("")
 
     # Requirements
@@ -146,18 +150,22 @@ def generate_readme(root_dir, output_path):
     lines += [
         "## Code generation",
         "",
-        "`index.json` and this README are generated — edit the sources, then:",
+        "`index.json`, this README and `stats.json` are generated — edit the",
+        "sources, then:",
         "",
         "```bash",
         "python3 scripts/generate_index.py   # .METADATA.toml -> index.json",
         "python3 scripts/generate_readme.py  # index.json -> README.md",
+        "python3 scripts/generate_stats.py   # GitHub + crates.io -> stats.json",
         "```",
         "",
         "`.METADATA.toml` lives at the root of each tool directory and holds the",
         "tool description, tags, requirements and dependency metadata.",
         "",
         "CI (`.github/workflows/ci.yml`) runs fmt/clippy/test and fails when these",
-        "generated files are out of date with their sources.",
+        "generated files are out of date with their sources. Only",
+        "`generate_stats.py` reaches the network, so it runs on its own schedule",
+        "(`.github/workflows/stats.yml`) instead of in CI.",
         "",
     ]
 

@@ -1,0 +1,71 @@
+{
+  "total": 248,
+  "tools": {
+    "adbkit": {
+      "github": 0,
+      "crates_io": 40,
+      "total": 40
+    },
+    "apkctl": {
+      "github": 13,
+      "crates_io": 9,
+      "total": 22
+    },
+    "assetgen": {
+      "github": 8,
+      "crates_io": 9,
+      "total": 17
+    },
+    "dp2px": {
+      "github": 12,
+      "crates_io": 9,
+      "total": 21
+    },
+    "iconkit": {
+      "github": 8,
+      "crates_io": 9,
+      "total": 17
+    },
+    "layoutlint": {
+      "github": 12,
+      "crates_io": 9,
+      "total": 21
+    },
+    "logstream": {
+      "github": 16,
+      "crates_io": 9,
+      "total": 25
+    },
+    "perfpoll": {
+      "github": 6,
+      "crates_io": 9,
+      "total": 15
+    },
+    "resclean": {
+      "github": 3,
+      "crates_io": 9,
+      "total": 12
+    },
+    "scenediff": {
+      "github": 3,
+      "crates_io": 9,
+      "total": 12
+    },
+    "startperf": {
+      "github": 8,
+      "crates_io": 9,
+      "total": 17
+    },
+    "svg2vd": {
+      "github": 3,
+      "crates_io": 14,
+      "total": 17
+    },
+    "uitool": {
+      "github": 3,
+      "crates_io": 9,
+      "total": 12
+    }
+  },
+  "updated": "2026-10-27"
+}
