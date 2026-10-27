@@ -2,6 +2,9 @@
 
 adb-based tools for Android development, written in Rust.
 
+[![GitHub releases](https://img.shields.io/github/downloads/YoannDev90/android-tools/total?label=GitHub%20releases)](https://github.com/YoannDev90/android-tools/releases)
+[![crates.io](https://img.shields.io/crates/d/adbkit?label=crates.io)](https://crates.io/crates/adbkit)
+
 | Crate | Description |
 |-------|-------------|
 | [`adbkit`](adbkit/) | Shared adb helpers for the android-tools workspace |

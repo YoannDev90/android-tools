@@ -9,6 +9,26 @@ ROOT_DIRS = ["adbkit", "logstream", "startperf", "uitool", "scripts"]
 # Personal scratch notes / local tooling — not part of the generated project docs.
 EXCLUDED = {"Ideas.md", ".gitignore", ".git", "target"}
 
+# Live shields.io counters. Nothing numeric may be written into README.md:
+# CI regenerates it and fails on `git diff --exit-code`, so a baked-in count
+# would go stale on the next download. shields re-fetches on every render.
+RELEASES = "https://img.shields.io/github/downloads/YoannDev90/android-tools/total"
+# shields has no crates.io aggregate (crates.io has no workspace endpoint), so
+# this is the workspace's shared library — the crate every tool pulls in.
+CRATES_IO = "https://img.shields.io/crates/d/adbkit"
+
+
+def render_badges():
+    """The two distribution counters, each linking to the page it counts."""
+    return "\n".join(
+        [
+            f"[![GitHub releases]({RELEASES}?label=GitHub%20releases)]"
+            f"(https://github.com/YoannDev90/android-tools/releases)",
+            f"[![crates.io]({CRATES_IO}?label=crates.io)]"
+            f"(https://crates.io/crates/adbkit)",
+        ]
+    )
+
 
 def render_layout(root_dir):
     """ASCII tree of the repository, derived from index.json tools + root files."""
@@ -55,7 +75,7 @@ def generate_readme(root_dir, output_path):
     reqs = index.get("requirements", {})
     build = index.get("build", {})
 
-    lines = [f"# {name}", "", description, ""]
+    lines = [f"# {name}", "", description, "", render_badges(), ""]
 
     # Tools table
     if tools:
