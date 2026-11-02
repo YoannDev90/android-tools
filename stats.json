@@ -1,5 +1,5 @@
 {
-  "total": 261,
+  "total": 285,
   "tools": {
     "adbkit": {
       "github": 0,
@@ -7,65 +7,65 @@
       "total": 41
     },
     "apkctl": {
-      "github": 13,
+      "github": 15,
       "crates_io": 10,
-      "total": 23
+      "total": 25
     },
     "assetgen": {
-      "github": 8,
+      "github": 10,
       "crates_io": 10,
-      "total": 18
+      "total": 20
     },
     "dp2px": {
-      "github": 12,
+      "github": 14,
       "crates_io": 10,
-      "total": 22
+      "total": 24
     },
     "iconkit": {
-      "github": 8,
+      "github": 10,
       "crates_io": 10,
-      "total": 18
+      "total": 20
     },
     "layoutlint": {
-      "github": 12,
+      "github": 14,
       "crates_io": 10,
-      "total": 22
+      "total": 24
     },
     "logstream": {
-      "github": 16,
+      "github": 18,
       "crates_io": 10,
-      "total": 26
+      "total": 28
     },
     "perfpoll": {
-      "github": 6,
-      "crates_io": 10,
-      "total": 16
-    },
-    "resclean": {
-      "github": 3,
-      "crates_io": 10,
-      "total": 13
-    },
-    "scenediff": {
-      "github": 3,
-      "crates_io": 10,
-      "total": 13
-    },
-    "startperf": {
       "github": 8,
       "crates_io": 10,
       "total": 18
     },
+    "resclean": {
+      "github": 5,
+      "crates_io": 10,
+      "total": 15
+    },
+    "scenediff": {
+      "github": 5,
+      "crates_io": 10,
+      "total": 15
+    },
+    "startperf": {
+      "github": 10,
+      "crates_io": 10,
+      "total": 20
+    },
     "svg2vd": {
-      "github": 3,
+      "github": 5,
       "crates_io": 15,
-      "total": 18
+      "total": 20
     },
     "uitool": {
-      "github": 3,
+      "github": 5,
       "crates_io": 10,
-      "total": 13
+      "total": 15
     }
   },
-  "updated": "2026-10-27"
+  "updated": "2026-11-02"
 }
