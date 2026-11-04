@@ -25,9 +25,37 @@ adb-based tools for Android development, written in Rust.
 
 ## Install
 
-Binaries for Linux (musl, any distro), Windows and macOS are attached to
-each [release](https://github.com/YoannDev90/android-tools/releases). Pick
-a tool, then:
+**The whole toolkit at once** — `scripts/install.sh` (Linux / macOS) and
+`scripts/install.ps1` (Windows) show the catalog, let you pick the tools to
+install, verify the SHA-256 of every archive, and double as an updater for
+what is already installed:
+
+```bash
+# Linux / macOS — interactive selector, installs to ~/.local/bin:
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh | bash
+
+# … then refresh / inspect / remove, any time:
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh \
+  | bash -s -- update
+```
+
+```powershell
+# Windows — interactive selector, installs to %LOCALAPPDATA%\android-tools\bin
+# (added to your user PATH):
+irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1 | iex
+
+# with arguments, wrap the download in a scriptblock:
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1))) update
+```
+
+Both take `install [tool…]`, `update`, `list`, `uninstall`, `--all` / `-All`
+and `--bin-dir` / `-BinDir`; run either with `help` / `-Help`.
+
+**One tool at a time** — binaries for Linux (musl, any distro), Windows and
+macOS are attached to each
+[release](https://github.com/YoannDev90/android-tools/releases):
 
 ```bash
 # Linux / macOS — detects OS and arch, installs to ~/.local/bin:
@@ -124,6 +152,8 @@ generated files are out of date with their sources. Only
 │   ├── LICENSE
 │   ├── README.md
 │   └── src
+├── packaging/
+│   └── arch
 ├── perfpoll/
 │   ├── .METADATA.toml
 │   ├── Cargo.toml
@@ -178,7 +208,10 @@ generated files are out of date with their sources. Only
     ├── generate_index.py
     ├── generate_readme.py
     ├── generate_stats.py
-    └── make_nfpm.py
+    ├── install.ps1
+    ├── install.sh
+    ├── make_nfpm.py
+    └── make_pkgbuild.py
 ```
 
 ## License
