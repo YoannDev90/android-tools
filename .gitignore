@@ -2,6 +2,13 @@
 /target
 **/target/
 
+# makepkg artifacts (packaging/arch/<tool>)
+packaging/arch/*/src/
+packaging/arch/*/pkg/
+packaging/arch/*/*.pkg.tar.*
+packaging/arch/*/*.tar.gz
+packaging/arch/*/*.log
+
 # Editor / OS
 .DS_Store
 *.swp
