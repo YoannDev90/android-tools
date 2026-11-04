@@ -15,6 +15,7 @@ For every tool (all of them, in lockstep — one version across the workspace):
 | macOS | `x86_64` + `aarch64` darwin archives |
 | Homebrew | `YoannDev90/homebrew-tap`, fed automatically by dist |
 | .deb / .rpm | `amd64` + `arm64`, attached to the same release (`packages.yml`) |
+| Arch | one source PKGBUILD per tool, `packaging/arch/<tool>/PKGBUILD` (`make_pkgbuild.py`) |
 | crates.io | every crate, `adbkit` first (`publish-crates.yml`) |
 | winget | one manifest per tool (`winget.yml`) |
 
@@ -60,6 +61,15 @@ For every tool (all of them, in lockstep — one version across the workspace):
    `workflow_dispatch`/`repository_dispatch` are exempt). They therefore also
    have a manual *Run workflow* entry point that takes the tag, e.g. `v0.1.0`.
 
+5. Once the tag is pushed, regenerate the Arch PKGBUILDs — their
+   `sha256sums` covers the tag tarball, which does not exist before step 3:
+
+   ```bash
+   python3 scripts/make_pkgbuild.py
+   ```
+
+   Commit them with the release. See [`packaging/arch/README.md`](packaging/arch/README.md).
+
 Preview a release without publishing: `dist plan`.
 
 ## Required secrets
@@ -89,6 +99,9 @@ sudo apt install ./apkctl_0.1.0_amd64.deb
 
 # Fedora / RHEL:
 sudo rpm -i apkctl-0.1.0.x86_64.rpm
+
+# Arch (PKGBUILDs from packaging/arch/, served by the AUR-bin repo):
+sudo pacman -S apkctl
 
 # anywhere with Rust:
 cargo install apkctl
