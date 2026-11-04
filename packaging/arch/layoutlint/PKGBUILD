@@ -10,6 +10,10 @@ pkgdesc='UI hierarchy lint — touch targets, overlap, labels, from a uiautomato
 arch=('x86_64' 'aarch64')
 url='https://github.com/YoannDev90/android-tools'
 license=('MIT')
+# makepkg's default `lto` option appends -flto=auto to CFLAGS. Useless here
+# (Rust's LTO comes from the cargo profile) and fatal for crates with C code
+# such as ring: rust-lld cannot read GCC LTO bitcode, symbols go missing.
+options=(!lto)
 depends=('android-tools')
 makedepends=('rust')
 source=("$pkgname-$pkgver.tar.gz::https://github.com/YoannDev90/android-tools/archive/refs/tags/v$pkgver.tar.gz")

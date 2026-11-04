@@ -42,6 +42,10 @@ pkgdesc=@PKGDESC@
 arch=('x86_64' 'aarch64')
 url='https://github.com/@REPO@'
 license=('MIT')
+# makepkg's default `lto` option appends -flto=auto to CFLAGS. Useless here
+# (Rust's LTO comes from the cargo profile) and fatal for crates with C code
+# such as ring: rust-lld cannot read GCC LTO bitcode, symbols go missing.
+options=(!lto)
 @DEPENDS@makedepends=('rust')
 source=("$pkgname-$pkgver.tar.gz::https://github.com/@REPO@/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('@SHA256@')
