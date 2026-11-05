@@ -1,3 +1,8 @@
+---
+name: assetgen
+description: Android density asset generator — one source PNG in, the whole density set out: legacy launcher icons, notification icon
+---
+
 # assetgen
 
 Android density asset generator — one source PNG in, the whole density set out: legacy launcher icons, notification icons, generic drawables, adaptive icons, 9-patch rescales and badged debug launcher variants.

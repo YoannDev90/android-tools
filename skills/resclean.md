@@ -1,3 +1,8 @@
+---
+name: resclean
+description: Dead `res/` resource detector — find what an Android project defines but never uses, and gate CI on it.
+---
+
 # resclean
 
 Dead `res/` resource detector — find what an Android project defines but never uses, and gate CI on it.

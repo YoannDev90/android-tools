@@ -1,3 +1,8 @@
+---
+name: layoutlint
+description: UI hierarchy lint — catch touch-target, overlap and label defects from a `uiautomator` dump, in CI or by hand.
+---
+
 # layoutlint
 
 UI hierarchy lint — catch touch-target, overlap and label defects from a `uiautomator` dump, in CI or by hand.

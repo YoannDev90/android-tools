@@ -1,3 +1,8 @@
+---
+name: startperf
+description: App cold/warm start benchmark over `adb` — measure launch times without Android Studio.
+---
+
 # startperf
 
 App cold/warm start benchmark over `adb` — measure launch times without Android Studio.

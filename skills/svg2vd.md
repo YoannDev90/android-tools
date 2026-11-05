@@ -1,3 +1,8 @@
+---
+name: svg2vd
+description: Convert an SVG into an Android VectorDrawable XML. Pure conversion — no device, no Android SDK, no Android Studio: the f
+---
+
 # svg2vd
 
 Convert an SVG into an Android VectorDrawable XML. Pure conversion — no device, no Android SDK, no Android Studio: the first fully pure crate of this workspace.

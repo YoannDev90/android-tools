@@ -1,3 +1,8 @@
+---
+name: iconkit
+description: Search and download Material Symbols icons ([fonts.google.com/icons](https://fonts.google.com/icons)) from the command l
+---
+
 # iconkit
 
 Search and download Material Symbols icons ([fonts.google.com/icons](https://fonts.google.com/icons)) from the command line: one catalog, cached locally, searched offline — then the SVG you wanted, or a ready-to-use Android VectorDrawable.

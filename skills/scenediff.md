@@ -1,3 +1,8 @@
+---
+name: scenediff
+description: Visual regression diff of two screenshots — catch what changed on screen, in CI or by hand.
+---
+
 # scenediff
 
 Visual regression diff of two screenshots — catch what changed on screen, in CI or by hand.

@@ -1,3 +1,8 @@
+---
+name: uitool
+description: Practical Android UI driver — dump, find, tap, shot over `adb`.
+---
+
 # uitool
 
 Practical Android UI driver — dump, find, tap, shot over `adb`.

@@ -1,3 +1,8 @@
+---
+name: perfpoll
+description: Per-app performance sampler over `adb` — CPU, RAM, battery drain and frame rate, on a fixed interval, to CSV or JSON.
+---
+
 # perfpoll
 
 Per-app performance sampler over `adb` — CPU, RAM, battery drain and frame rate, on a fixed interval, to CSV or JSON.

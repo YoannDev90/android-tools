@@ -1,3 +1,8 @@
+---
+name: dp2px
+description: px ↔ dp ↔ sp converter for Android — offline, or against the density your device actually draws at.
+---
+
 # dp2px
 
 px ↔ dp ↔ sp converter for Android — offline, or against the density your device actually draws at.

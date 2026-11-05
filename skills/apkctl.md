@@ -1,3 +1,8 @@
+---
+name: apkctl
+description: App lifecycle over adb — clear data, restart, kill, uninstall, open deep links — on one device or every connected one.
+---
+
 # apkctl
 
 App lifecycle over adb — clear data, restart, kill, uninstall, open deep links — on one device or every connected one.

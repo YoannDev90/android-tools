@@ -1,3 +1,8 @@
+---
+name: logstream
+description: Live Android log streamer — `logcat`, but actually nice.
+---
+
 # logstream
 
 Live Android log streamer — `logcat`, but actually nice.
