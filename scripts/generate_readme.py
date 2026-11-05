@@ -6,7 +6,6 @@ import os
 from urllib.parse import quote
 
 ROOT_FILES = ["Cargo.toml", "Cargo.lock", "index.json", "stats.json", "README.md", "LICENSE", "rustfmt.toml"]
-ROOT_DIRS = ["adbkit", "logstream", "startperf", "uitool", "scripts"]
 # Personal scratch notes / local tooling — not part of the generated project docs.
 # __pycache__ and target are build artifacts: listing them makes the committed
 # README depend on whether the generator happened to be run after a build.
@@ -35,20 +34,18 @@ def tool_badge(tool):
 
 def render_layout(root_dir):
     """ASCII tree of the repository, derived from index.json tools + root files."""
-    tools = []
-    if os.path.isfile(os.path.join(root_dir, "index.json")):
-        with open(os.path.join(root_dir, "index.json"), encoding="utf-8") as f:
-            tools = [t for t in json.load(f)["tools"] if t.get("category") != "library"]
+
+    def children(path):
+        return sorted(
+            e for e in os.listdir(path)
+            if e not in EXCLUDED and e != "target"
+        )
 
     entries = []
     for name in ROOT_FILES:
         if os.path.isfile(os.path.join(root_dir, name)):
-            entries.append((name, os.path.isdir(os.path.join(root_dir, name))))
-    for name in sorted(os.listdir(root_dir)):
-        path = os.path.join(root_dir, name)
-        if os.path.isdir(path) and name not in EXCLUDED and name not in ROOT_DIRS:
-            entries.append((name, True))
-    for name in ROOT_DIRS:
+            entries.append((name, False))
+    for name in children(root_dir):
         if os.path.isdir(os.path.join(root_dir, name)):
             entries.append((name, True))
 
@@ -56,15 +53,21 @@ def render_layout(root_dir):
     for i, (name, is_dir) in enumerate(entries):
         last = i == len(entries) - 1
         lines.append(("└── " if last else "├── ") + name + ("/" if is_dir else ""))
-        if is_dir:
-            sub = sorted(
-                e for e in os.listdir(os.path.join(root_dir, name))
-                if e not in EXCLUDED and e != "target"
-            )
-            for j, s in enumerate(sub):
-                sub_last = j == len(sub) - 1
-                prefix = "    " if last else "│   "
-                lines.append(prefix + ("└── " if sub_last else "├── ") + s)
+        if not is_dir:
+            continue
+        prefix = "    " if last else "│   "
+        subs = children(os.path.join(root_dir, name))
+        for j, s in enumerate(subs):
+            sub_last = j == len(subs) - 1
+            lines.append(prefix + ("└── " if sub_last else "├── ") + s)
+            # One level deeper under src/: each crate's own files.
+            if name != "src" or not os.path.isdir(os.path.join(root_dir, name, s)):
+                continue
+            inner = children(os.path.join(root_dir, name, s))
+            inner_prefix = prefix + ("    " if sub_last else "│   ")
+            for k, t in enumerate(inner):
+                inner_last = k == len(inner) - 1
+                lines.append(inner_prefix + ("└── " if inner_last else "├── ") + t)
     return "\n".join(lines)
 
 

@@ -7,10 +7,10 @@ license = "MIT"
 
 [metadata]
 long_description = "Library crate with device picking and listing, shell/exec-out wrappers with timeouts, the uiautomator hierarchy model (XML to flat nodes, via roxmltree), density parsing (wm density) and pure helpers. Tool-specific behaviour stays in the tools that own it."
-readme = "adbkit/README.md"
-license_file = "adbkit/LICENSE"
-manifest = "adbkit/Cargo.toml"
-entrypoint = "adbkit/src/lib.rs"
+readme = "src/adbkit/README.md"
+license_file = "src/adbkit/LICENSE"
+manifest = "src/adbkit/Cargo.toml"
+entrypoint = "src/adbkit/src/lib.rs"
 category = "library"
 tags = ["adb", "shared", "plumbing"]
 requires = { adb = "Android SDK platform-tools in PATH" }

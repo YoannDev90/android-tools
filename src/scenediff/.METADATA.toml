@@ -7,10 +7,10 @@ license = "MIT"
 
 [metadata]
 long_description = "Visual regression testing from the command line: compares two screenshots pixel by pixel (files, or two live captures from a device), reports how many pixels differ, in what percentage and where (bounding box), and writes a red-marked overlay image. A --threshold percentage turns the comparison into a CI gate."
-readme = "scenediff/README.md"
-license_file = "scenediff/LICENSE"
-manifest = "scenediff/Cargo.toml"
-entrypoint = "scenediff/src/main.rs"
+readme = "src/scenediff/README.md"
+license_file = "src/scenediff/LICENSE"
+manifest = "src/scenediff/Cargo.toml"
+entrypoint = "src/scenediff/src/main.rs"
 category = "testing"
 tags = ["android", "adb", "screenshot", "diff", "visual-regression", "testing", "ci", "cli"]
 requires = { adb = "only for --device mode: Android SDK platform-tools in PATH" }

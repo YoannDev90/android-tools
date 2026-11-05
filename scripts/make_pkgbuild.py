@@ -72,7 +72,7 @@ package() {
   cd "$srcdir/@REPO_NAME@-$pkgver"
   install -Dm755 "target/release/$pkgname" "$pkgdir/usr/bin/$pkgname"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
-  install -Dm644 "$pkgname/README.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
+  install -Dm644 "src/$pkgname/README.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
 }
 """
 

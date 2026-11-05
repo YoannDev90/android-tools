@@ -7,10 +7,10 @@ license = "MIT"
 
 [metadata]
 long_description = "Measures cold and warm app launch times without Android Studio: runs `am start -W` N times against an activity, parses the framework-reported timings (TotalTime/WaitTime/ThisTime), and summarizes them as min/median/mean/max/stddev. Reports as a table, JSON or CSV, and skips runs Android admits it did not really launch."
-readme = "startperf/README.md"
-license_file = "startperf/LICENSE"
-manifest = "startperf/Cargo.toml"
-entrypoint = "startperf/src/main.rs"
+readme = "src/startperf/README.md"
+license_file = "src/startperf/LICENSE"
+manifest = "src/startperf/Cargo.toml"
+entrypoint = "src/startperf/src/main.rs"
 category = "benchmark"
 tags = ["android", "adb", "performance", "benchmark", "startup", "am-start", "cli"]
 requires = { adb = "Android SDK platform-tools in PATH", installed_package = true }

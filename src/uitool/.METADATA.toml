@@ -7,10 +7,10 @@ license = "MIT"
 
 [metadata]
 long_description = "Drives a device UI from the command line: dumps the uiautomator hierarchy as labeled lines, finds/waits for nodes by text or content-desc, taps by label or coordinates, swipes, takes cropped/scaled screenshots, picks the color under any point, launches activities, sends keys and text."
-readme = "uitool/README.md"
-license_file = "uitool/LICENSE"
-manifest = "uitool/Cargo.toml"
-entrypoint = "uitool/src/main.rs"
+readme = "src/uitool/README.md"
+license_file = "src/uitool/LICENSE"
+manifest = "src/uitool/Cargo.toml"
+entrypoint = "src/uitool/src/main.rs"
 category = "automation"
 tags = ["android", "adb", "uiautomator", "automation", "screenshot", "testing", "cli"]
 requires = { adb = true, screen_on = "uiautomator dump fails on a locked/off screen" }

@@ -7,10 +7,10 @@ license = "MIT"
 
 [metadata]
 long_description = "Lints a uiautomator UI hierarchy for the defects scripts and users trip over: tap targets under 48 dp, two targets stacked on each other, clickable views with no visible label, and labels sitting on nodes that are not tappable while an identical clickable one exists. Reads the dump from a connected device or replays a saved file (no device needed for CI), converts px to dp using the device density, and gates on exit codes: text or JSON report, exit 1 on any finding, --warn-only to opt out."
-readme = "layoutlint/README.md"
-license_file = "layoutlint/LICENSE"
-manifest = "layoutlint/Cargo.toml"
-entrypoint = "layoutlint/src/main.rs"
+readme = "src/layoutlint/README.md"
+license_file = "src/layoutlint/LICENSE"
+manifest = "src/layoutlint/Cargo.toml"
+entrypoint = "src/layoutlint/src/main.rs"
 category = "testing"
 tags = ["android", "adb", "uiautomator", "lint", "accessibility", "touch-target", "testing", "ci", "cli"]
 requires = { adb = "only for --device mode: Android SDK platform-tools in PATH" }

@@ -7,10 +7,10 @@ license = "MIT"
 
 [metadata]
 long_description = "Streams `adb logcat` (threadtime, main/system/crash buffers) filtered to one app package, with a ratatui TUI (search, level/tag filters, pid tracking, crash and restart banners) plus plain and JSONL output modes for piping."
-readme = "logstream/README.md"
-license_file = "logstream/LICENSE"
-manifest = "logstream/Cargo.toml"
-entrypoint = "logstream/src/main.rs"
+readme = "src/logstream/README.md"
+license_file = "src/logstream/LICENSE"
+manifest = "src/logstream/Cargo.toml"
+entrypoint = "src/logstream/src/main.rs"
 category = "logging"
 tags = ["android", "logcat", "adb", "tui", "debugging", "streaming", "jsonl"]
 requires = { adb = true, installed_package = true }

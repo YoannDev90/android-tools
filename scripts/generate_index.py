@@ -25,9 +25,11 @@ def count_loc(tool_dir, files):
 
 
 def collect_tools(root_dir):
+    # The crates live under src/; index.json keeps repo-relative paths.
+    src_dir = os.path.join(root_dir, "src")
     tools = []
-    for entry in sorted(os.listdir(root_dir)):
-        tool_dir = os.path.join(root_dir, entry)
+    for entry in sorted(os.listdir(src_dir)):
+        tool_dir = os.path.join(src_dir, entry)
         if not os.path.isdir(tool_dir):
             continue
         metadata_path = os.path.join(tool_dir, ".METADATA.toml")
@@ -43,7 +45,7 @@ def collect_tools(root_dir):
         tool_entry = {
             "id": meta["package"]["name"],
             "name": meta["package"]["name"],
-            "path": entry,
+            "path": f"src/{entry}",
             "version": meta["package"]["version"],
             "edition": meta["package"]["edition"],
             "language": "rust",

@@ -28,7 +28,7 @@ For every tool (all of them, in lockstep — one version across the workspace):
    ```bash
    for c in adbkit apkctl assetgen dp2px layoutlint logstream perfpoll \
             resclean scenediff startperf svg2vd uitool; do
-     sed -i "s/^version = \".*\"/version = \"X.Y.Z\"/" $c/Cargo.toml
+     sed -i "s/^version = \".*\"/version = \"X.Y.Z\"/" src/$c/Cargo.toml
    done
    ```
 

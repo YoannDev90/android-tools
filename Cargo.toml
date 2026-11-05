@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["adbkit", "apkctl", "assetgen", "dp2px", "iconkit", "layoutlint", "logstream", "perfpoll", "resclean", "scenediff", "startperf", "svg2vd", "uitool"]
+members = ["src/adbkit", "src/apkctl", "src/assetgen", "src/dp2px", "src/iconkit", "src/layoutlint", "src/logstream", "src/perfpoll", "src/resclean", "src/scenediff", "src/startperf", "src/svg2vd", "src/uitool"]
 
 [workspace.package]
 repository = "https://github.com/YoannDev90/android-tools"

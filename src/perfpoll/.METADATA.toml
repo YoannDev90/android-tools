@@ -7,10 +7,10 @@ license = "MIT"
 
 [metadata]
 long_description = "Polls one or more Android apps on a fixed interval over adb and streams one row per app per tick: CPU share (/proc/stat + /proc/pid/stat deltas), RAM (dumpsys meminfo PSS), battery (global level plus per-app cumulative mAh deltas from dumpsys batterystats) and frame stats (dumpsys gfxinfo Total/Janky deltas over real elapsed time). Writes CSV as it goes (safe to Ctrl+C) or one JSON document with per-app summaries at the end."
-readme = "perfpoll/README.md"
-license_file = "perfpoll/LICENSE"
-manifest = "perfpoll/Cargo.toml"
-entrypoint = "perfpoll/src/main.rs"
+readme = "src/perfpoll/README.md"
+license_file = "src/perfpoll/LICENSE"
+manifest = "src/perfpoll/Cargo.toml"
+entrypoint = "src/perfpoll/src/main.rs"
 category = "monitoring"
 tags = ["android", "performance", "battery", "fps", "profiling", "adb", "cli"]
 requires = {}
