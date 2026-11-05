@@ -1,5 +1,7 @@
 # Contributing
 
+If you are an AI agent, read and follow [AGENTS.md](AGENTS.md) first.
+
 ## Build
 
 ```bash

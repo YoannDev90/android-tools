@@ -2,6 +2,10 @@
 
 Guidance for AI coding agents working in the `android-tools` repository.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for build commands and code-generation workflow. Follow it.
+
 ## Project overview
 
 A Rust workspace of adb-based CLI tools for Android development. Each tool is its own crate under `src/`. `adbkit` is a shared library crate of adb helpers; the rest are binaries.
