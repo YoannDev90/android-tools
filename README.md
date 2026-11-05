@@ -2,6 +2,23 @@
 
 adb-based tools for Android development, written in Rust.
 
+## Quick install
+
+```bash
+# Linux / macOS — pick the tools in a selector, installs to ~/.local/bin:
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh | bash
+```
+
+```powershell
+# Windows — same selector, installs to %LOCALAPPDATA%\android-tools\bin:
+irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1 | iex
+```
+
+The same scripts are the updater for what they installed: append
+`| bash -s -- update`, and see [Install](#install) for `list`,
+`uninstall`, `--all` / `--bin-dir` and every other channel.
+
 | Crate | Description | Downloads |
 |-------|-------------|-----------|
 | [`adbkit`](adbkit/) | Shared adb helpers for the android-tools workspace | ![adbkit](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FYoannDev90%2Fandroid-tools%2Fmain%2Fstats.json&query=$.tools.adbkit.total&label=adbkit&style=for-the-badge) |

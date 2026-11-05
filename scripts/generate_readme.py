@@ -80,6 +80,28 @@ def generate_readme(root_dir, output_path):
 
     lines = [f"# {name}", "", description, ""]
 
+    # Lead with the global installers: one selector for the whole toolkit,
+    # one command, before the reader has to scan the table.
+    lines += [
+        "## Quick install",
+        "",
+        "```bash",
+        "# Linux / macOS — pick the tools in a selector, installs to ~/.local/bin:",
+        "curl --proto '=https' --tlsv1.2 -LsSf \\",
+        "  https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh | bash",
+        "```",
+        "",
+        "```powershell",
+        "# Windows — same selector, installs to %LOCALAPPDATA%\\android-tools\\bin:",
+        "irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1 | iex",
+        "```",
+        "",
+        "The same scripts are the updater for what they installed: append",
+        "`| bash -s -- update`, and see [Install](#install) for `list`,",
+        "`uninstall`, `--all` / `--bin-dir` and every other channel.",
+        "",
+    ]
+
     # Tools table — one live download counter per tool (GitHub + crates.io).
     if tools:
         lines += [
