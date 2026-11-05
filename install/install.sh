@@ -1,10 +1,8 @@
-#!/usr/bin/env bash
 # Shared helpers for the android-tools installers.
 log() { printf '%s\n' "$*"; }
 err() { printf 'error: %s\n' "$*" >&2; }
 
 have() { command -v "$1" >/dev/null 2>&1; }
-#!/usr/bin/env bash
 info() { printf '%s\n' "$*"; }
 ok() { printf '%s ok%s %s\n' "$C_GREEN" "$C_OFF" "$*"; }
 warn() { printf '%swarning:%s %s\n' "$C_YELLOW" "$C_OFF" "$*" >&2; }
@@ -44,7 +42,6 @@ EOF
 }
 
 # ------------------------------------------------------------------ network
-#!/usr/bin/env bash
 # Shared SHA-256 helper.
 sha256_file() {
 	if have sha256sum; then
@@ -57,7 +54,6 @@ sha256_file() {
 		return 1
 	fi
 }
-#!/usr/bin/env bash
 # Shared platform detection.
 detect_target() {
 	local os arch
@@ -76,7 +72,6 @@ detect_target() {
 	esac
 	TARGET="$arch-$os"
 }
-#!/usr/bin/env bash
 http_get() {
 	if have curl; then
 		curl --proto '=https' --tlsv1.2 -fsSL --retry 3 --retry-delay 1 "$1"
@@ -96,7 +91,6 @@ http_fetch() { # url dest
 		die "curl or wget is required"
 	fi
 }
-#!/usr/bin/env bash
 parse_index() { # $1 = index.json contents
 	local out
 	if have python3; then
@@ -224,7 +218,6 @@ drop_state() { # tool — forget one row, keeping the three arrays aligned
 	S_SHA=("${ns[@]+"${ns[@]}"}")
 	save_state
 }
-#!/usr/bin/env bash
 is_installed() { [ -x "$BIN_DIR/$1" ]; }
 
 known_tool() {
@@ -277,7 +270,6 @@ installed_version() { # tool
 }
 
 # ------------------------------------------------------------ install/update
-#!/usr/bin/env bash
 install_tool() { # tool — non-zero when the tool could not be installed
 	local tool="$1"
 	local asset="$tool-$TARGET.tar.xz"
@@ -378,7 +370,6 @@ needs_update() { # tool
 	fi
 	return 0 # cannot tell apart → refresh
 }
-#!/usr/bin/env bash
 path_note() {
 	case ":$PATH:" in
 	*":$BIN_DIR:"*) return 0 ;;
@@ -551,7 +542,6 @@ selector() {
 # ---------------------------------------------------------------- commands
 
 # Turn the positional arguments into TARGETS (shared by install/uninstall).
-#!/usr/bin/env bash
 resolve_names() {
 	TARGETS=()
 	local name

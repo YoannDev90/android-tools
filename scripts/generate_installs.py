@@ -22,7 +22,12 @@ def inline_sh(text):
     def repl(m):
         name = m.group(1)
         path = os.path.join(UTILS_DIR, name + ".sh")
-        content = open(path, encoding="utf-8").read().rstrip()
+        content = open(path, encoding="utf-8").read()
+        lines = content.splitlines()
+        # strip shebang and leading blank lines
+        while lines and (lines[0].startswith("#!") or lines[0].strip() == ""):
+            lines.pop(0)
+        content = "\n".join(lines).rstrip()
         return inline_sh(content)
 
     # Repeat until no source lines remain (handles nested inlining).
@@ -37,7 +42,11 @@ def inline_ps1(text):
     def repl(m):
         name = m.group(1)
         path = os.path.join(UTILS_DIR, name + ".ps1")
-        content = open(path, encoding="utf-8").read().rstrip()
+        content = open(path, encoding="utf-8").read()
+        lines = content.splitlines()
+        while lines and (lines[0].startswith("#!") or lines[0].strip() == ""):
+            lines.pop(0)
+        content = "\n".join(lines).rstrip()
         return inline_ps1(content)
 
     while pat.search(text):
