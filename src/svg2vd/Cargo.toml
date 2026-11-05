@@ -20,4 +20,4 @@ anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 # No fonts (text is skipped, and system fonts would make CI output
 # depend on installed fonts), no svgz, no writer (we hand-emit XML).
-usvg = { version = "0.48", default-features = false }
+usvg = { version = "0.49", default-features = false }
