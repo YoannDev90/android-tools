@@ -39,7 +39,9 @@
   .\install.ps1 update
 #>
 param(
-    [Parameter(Position = 0)]
+    [Parameter(Position = 0)
+. "$PSScriptRoot\utils\hash.ps1"
+]
     [string]$Command = 'install',
 
     [Parameter(Position = 1, ValueFromRemainingArguments = $true)]
