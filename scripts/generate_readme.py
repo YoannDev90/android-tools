@@ -1,28 +1,20 @@
 #!/usr/bin/env python3
-"""Generate README.md from index.json."""
+"""Regenerate the dynamic portions of README.md from index.json.
+
+Only the content between <!-- BEGIN:name --> / <!-- END:name --> markers is
+replaced; the rest of README.md is left untouched so prose can be edited by
+hand. Sections regenerated: tools-table, layout.
+"""
 
 import json
 import os
+import re
 from urllib.parse import quote
 
-ROOT_FILES = ["Cargo.toml", "Cargo.lock", "index.json", "stats.json", "README.md", "LICENSE", "rustfmt.toml"]
-# Personal scratch notes / local tooling — not part of the generated project docs.
-# __pycache__ and target are build artifacts: listing them makes the committed
-# README depend on whether the generator happened to be run after a build.
-EXCLUDED = {"Ideas.md", ".gitignore", ".git", "target", "__pycache__"}
-
-# GitHub Releases + crates.io, merged per tool by scripts/generate_stats.py and
-# refreshed by .github/workflows/stats.yml. shields.io polls this file on every
-# render, so the URLs below stay constant and README generation remains
-# offline — CI regenerates the README and fails when it differs, so no count
-# may ever be baked into the file itself.
 STATS_JSON = "https://raw.githubusercontent.com/YoannDev90/android-tools/main/stats.json"
 
 
 def tool_badge(tool):
-    """Live download counter for one tool, GitHub releases and crates.io added
-    together. for-the-badge uppercases the label — that is the style's own
-    look, not a bug in the query."""
     return (
         "https://img.shields.io/badge/dynamic/json"
         f"?url={quote(STATS_JSON, safe='')}"
@@ -32,14 +24,25 @@ def tool_badge(tool):
     )
 
 
+def render_tools_table(tools):
+    lines = [
+        "| Crate | Description | Downloads |",
+        "|-------|-------------|-----------|",
+    ]
+    for t in tools:
+        lines.append(
+            f"| [`{t['name']}`]({t['path']}/) | {t['description']} | "
+            f"![{t['name']}]({tool_badge(t['name'])}) |"
+        )
+    return "\n".join(lines)
+
+
 def render_layout(root_dir):
-    """ASCII tree of the repository, derived from index.json tools + root files."""
+    EXCLUDED = {"Ideas.md", ".gitignore", ".git", "target", "__pycache__"}
+    ROOT_FILES = ["Cargo.toml", "Cargo.lock", "index.json", "stats.json", "README.md", "LICENSE", "rustfmt.toml"]
 
     def children(path):
-        return sorted(
-            e for e in os.listdir(path)
-            if e not in EXCLUDED and e != "target"
-        )
+        return sorted(e for e in os.listdir(path) if e not in EXCLUDED and e != "target")
 
     entries = []
     for name in ROOT_FILES:
@@ -60,7 +63,6 @@ def render_layout(root_dir):
         for j, s in enumerate(subs):
             sub_last = j == len(subs) - 1
             lines.append(prefix + ("└── " if sub_last else "├── ") + s)
-            # One level deeper under src/: each crate's own files.
             if name != "src" or not os.path.isdir(os.path.join(root_dir, name, s)):
                 continue
             inner = children(os.path.join(root_dir, name, s))
@@ -68,177 +70,32 @@ def render_layout(root_dir):
             for k, t in enumerate(inner):
                 inner_last = k == len(inner) - 1
                 lines.append(inner_prefix + ("└── " if inner_last else "├── ") + t)
-    return "\n".join(lines)
+    return "```\n" + "\n".join(lines) + "\n```"
+
+
+def replace_section(text, name, content):
+    pattern = re.compile(rf"<!-- BEGIN:{name} -->.*?<!-- END:{name} -->", re.DOTALL)
+    replacement = f"<!-- BEGIN:{name} -->\n{content}\n<!-- END:{name} -->"
+    new, n = pattern.subn(replacement, text)
+    if n != 1:
+        raise SystemExit(f"expected exactly one {name} marker block, found {n}")
+    return new
 
 
 def generate_readme(root_dir, output_path):
     with open(os.path.join(root_dir, "index.json"), encoding="utf-8") as f:
         index = json.load(f)
-
-    name = index.get("name", "android-tools")
-    description = index.get("description", "")
     tools = index.get("tools", [])
-    reqs = index.get("requirements", {})
-    build = index.get("build", {})
 
-    lines = [f"# {name}", "", description, ""]
+    with open(output_path, encoding="utf-8") as f:
+        text = f.read()
 
-    # Lead with the global installers: one selector for the whole toolkit,
-    # one command, before the reader has to scan the table.
-    lines += [
-        "## Quick install",
-        "",
-        "```bash",
-        "# Linux / macOS — pick the tools in a selector, installs to ~/.local/bin:",
-        "curl --proto '=https' --tlsv1.2 -LsSf \\",
-        "  https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh | bash",
-        "```",
-        "",
-        "```powershell",
-        "# Windows — same selector, installs to %LOCALAPPDATA%\\android-tools\\bin:",
-        "irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1 | iex",
-        "```",
-        "",
-        "The same scripts are the updater for what they installed: append",
-        "`| bash -s -- update`, and see [Install](#install) for `list`,",
-        "`uninstall`, `--all` / `--bin-dir` and every other channel.",
-        "",
-    ]
-
-    # Tools table — one live download counter per tool (GitHub + crates.io).
-    if tools:
-        lines += [
-            "| Crate | Description | Downloads |",
-            "|-------|-------------|-----------|",
-        ]
-        for t in tools:
-            lines.append(
-                f"| [`{t['name']}`]({t['path']}/) | {t['description']} | "
-                f"![{t['name']}]({tool_badge(t['name'])}) |"
-            )
-        lines.append("")
-
-    # Requirements
-    lines.append("## Requirements")
-    if "rust" in reqs:
-        lines.append(f"- **Rust**: {reqs['rust']}")
-    if "adb" in reqs:
-        lines.append(f"- **adb**: {reqs['adb']}")
-    if "device" in reqs:
-        lines.append(f"- **Device**: {reqs['device']}")
-    lines.append("")
-
-    # Install (distribution channels set up in RELEASING.md)
-    lines += [
-        "## Install",
-        "",
-        "**The whole toolkit at once** — `scripts/install.sh` (Linux / macOS) and",
-        "`scripts/install.ps1` (Windows) show the catalog, let you pick the tools to",
-        "install, verify the SHA-256 of every archive, and double as an updater for",
-        "what is already installed:",
-        "",
-        "```bash",
-        "# Linux / macOS — interactive selector, installs to ~/.local/bin:",
-        "curl --proto '=https' --tlsv1.2 -LsSf \\",
-        "  https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh | bash",
-        "",
-        "# … then refresh / inspect / remove, any time:",
-        "curl --proto '=https' --tlsv1.2 -LsSf \\",
-        "  https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh \\",
-        "  | bash -s -- update",
-        "```",
-        "",
-        "```powershell",
-        "# Windows — interactive selector, installs to %LOCALAPPDATA%\\android-tools\\bin",
-        "# (added to your user PATH):",
-        "irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1 | iex",
-        "",
-        "# with arguments, wrap the download in a scriptblock:",
-        "& ([scriptblock]::Create((irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1))) update",
-        "```",
-        "",
-        "Both take `install [tool…]`, `update`, `list`, `uninstall`, `--all` / `-All`",
-        "and `--bin-dir` / `-BinDir`; run either with `help` / `-Help`.",
-        "",
-        "**One tool at a time** — binaries for Linux (musl, any distro), Windows and",
-        "macOS are attached to each",
-        "[release](https://github.com/YoannDev90/android-tools/releases):",
-        "",
-        "```bash",
-        "# Linux / macOS — detects OS and arch, installs to ~/.local/bin:",
-        "curl --proto '=https' --tlsv1.2 -LsSf \\",
-        "  https://github.com/YoannDev90/android-tools/releases/latest/download/apkctl-installer.sh | sh",
-        "",
-        "# Windows (PowerShell):",
-        "irm https://github.com/YoannDev90/android-tools/releases/latest/download/apkctl-installer.ps1 | iex",
-        "",
-        "# macOS / Linuxbrew:",
-        "brew install YoannDev90/homebrew-tap/apkctl",
-        "",
-        "# Debian / Ubuntu (.deb) and Fedora / RHEL (.rpm) attached to the release:",
-        "sudo apt install ./apkctl_*_amd64.deb",
-        "",
-        "# From crates.io (needs Rust):",
-        "cargo install apkctl",
-        "",
-        "# Windows package manager:",
-        "winget install YoannDev90.apkctl",
-        "```",
-        "",
-        "Replace `apkctl` with any tool from the table above. See",
-        "[`RELEASING.md`](RELEASING.md) for the full release and packaging chain.",
-        "",
-    ]
-
-    # Build
-    lines.append("## Build")
-    if "release" in build:
-        cmds = [build["release"], build.get("test", "")]
-        if build.get("fmt"):
-            cmds.append(build["fmt"])
-        if build.get("clippy"):
-            cmds.append(build["clippy"])
-        lines.append("```bash\n" + "\n".join(c for c in cmds if c) + "\n```")
-    lines.append("")
-
-    # Scripts
-    lines += [
-        "## Code generation",
-        "",
-        "`index.json`, this README and `stats.json` are generated — edit the",
-        "sources, then:",
-        "",
-        "```bash",
-        "python3 scripts/generate_index.py   # .METADATA.toml -> index.json",
-        "python3 scripts/generate_readme.py  # index.json -> README.md",
-        "python3 scripts/generate_stats.py   # GitHub + crates.io -> stats.json",
-        "```",
-        "",
-        "`.METADATA.toml` lives at the root of each tool directory and holds the",
-        "tool description, tags, requirements and dependency metadata.",
-        "",
-        "CI (`.github/workflows/ci.yml`) runs fmt/clippy/test and fails when these",
-        "generated files are out of date with their sources. Only",
-        "`generate_stats.py` reaches the network, so it runs on its own schedule",
-        "(`.github/workflows/stats.yml`) instead of in CI.",
-        "",
-    ]
-
-    # Layout
-    lines += ["## Repository layout", "", "```", render_layout(root_dir), "```", ""]
-
-    # License
-    lines += [
-        "## License",
-        "",
-        "MIT — see [LICENSE](LICENSE). Each crate folder carries its own copy.",
-        "",
-    ]
+    text = replace_section(text, "tools-table", render_tools_table(tools))
+    text = replace_section(text, "layout", render_layout(root_dir))
 
     with open(output_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines))
-
-    print(f"Generated {output_path}")
+        f.write(text)
+    print(f"Updated {output_path}")
 
 
 if __name__ == "__main__":

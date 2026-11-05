@@ -19,6 +19,7 @@ The same scripts are the updater for what they installed: append
 `| bash -s -- update`, and see [Install](#install) for `list`,
 `uninstall`, `--all` / `--bin-dir` and every other channel.
 
+<!-- BEGIN:tools-table -->
 | Crate | Description | Downloads |
 |-------|-------------|-----------|
 | [`adbkit`](src/adbkit/) | Shared adb helpers for the android-tools workspace | ![adbkit](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FYoannDev90%2Fandroid-tools%2Fmain%2Fstats.json&query=$.tools.adbkit.total&label=adbkit&style=for-the-badge) |
@@ -34,11 +35,15 @@ The same scripts are the updater for what they installed: append
 | [`startperf`](src/startperf/) | App cold/warm start benchmark over adb | ![startperf](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FYoannDev90%2Fandroid-tools%2Fmain%2Fstats.json&query=$.tools.startperf.total&label=startperf&style=for-the-badge) |
 | [`svg2vd`](src/svg2vd/) | SVG → Android VectorDrawable XML converter — pure, no device, no Android SDK | ![svg2vd](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FYoannDev90%2Fandroid-tools%2Fmain%2Fstats.json&query=$.tools.svg2vd.total&label=svg2vd&style=for-the-badge) |
 | [`uitool`](src/uitool/) | Practical Android UI driver — dump, find, tap, shot over adb | ![uitool](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FYoannDev90%2Fandroid-tools%2Fmain%2Fstats.json&query=$.tools.uitool.total&label=uitool&style=for-the-badge) |
+<!-- END:tools-table -->
 
 ## Requirements
+
+
 - **Rust**: stable (verified with rustc 1.99)
 - **adb**: Android SDK platform-tools in PATH
 - **Device**: Connected Android device or emulator with USB debugging authorized
+
 
 ## Install
 
@@ -99,12 +104,15 @@ Replace `apkctl` with any tool from the table above. See
 [`RELEASING.md`](RELEASING.md) for the full release and packaging chain.
 
 ## Build
+
+
 ```bash
 cargo build --release
 cargo test --workspace
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 ```
+
 
 ## Code generation
 
@@ -127,6 +135,7 @@ generated files are out of date with their sources. Only
 
 ## Repository layout
 
+<!-- BEGIN:layout -->
 ```
 .
 ├── Cargo.toml
@@ -231,6 +240,7 @@ generated files are out of date with their sources. Only
         ├── README.md
         └── src
 ```
+<!-- END:layout -->
 
 ## License
 
