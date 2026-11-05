@@ -1,7 +1,6 @@
 # Shared helpers for the android-tools installers.
 function Log($msg) { Write-Host $msg }
 function Err($msg) { Write-Error $msg }
-
 function Write-Ok([string]$Message) { Write-Host " ok $Message" -ForegroundColor Green }
 function Write-Warn([string]$Message) { Write-Host "warning: $Message" -ForegroundColor Yellow }
 
@@ -44,12 +43,10 @@ From a one-liner, pass arguments with a scriptblock:
 }
 
 # ---------------------------------------------------------------- platform
-
 # Shared SHA-256 helper.
 function Get-Sha256File($path) {
     return (Get-FileHash -Path $path -Algorithm SHA256).Hash.ToLower()
 }
-
 function Test-Windows {
     if ($PSVersionTable.PSVersion.Major -ge 6) {
         return ($PSVersionTable.Platform -eq 'Win3NT')
@@ -118,7 +115,6 @@ function Get-VersionFromRedirect {
 }
 
 # ----------------------------------------------------------------- catalog
-
 function Get-Text([string]$Url) {
     $script:LastError = ''
     $savedPreference = $ProgressPreference
@@ -164,7 +160,6 @@ function Invoke-Download([string]$Url, [string]$OutFile) {
 
 # Last-resort version: /releases/latest redirects straight at the tag, needs no
 # API quota and no JSON parser.
-
 #Requires -Version 5.1
 <#
 .SYNOPSIS

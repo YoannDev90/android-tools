@@ -4,7 +4,6 @@ log() { printf '%s\n' "$*"; }
 err() { printf 'error: %s\n' "$*" >&2; }
 
 have() { command -v "$1" >/dev/null 2>&1; }
-
 #!/usr/bin/env bash
 info() { printf '%s\n' "$*"; }
 ok() { printf '%s ok%s %s\n' "$C_GREEN" "$C_OFF" "$*"; }
@@ -45,7 +44,6 @@ EOF
 }
 
 # ------------------------------------------------------------------ network
-
 #!/usr/bin/env bash
 # Shared SHA-256 helper.
 sha256_file() {
@@ -59,7 +57,6 @@ sha256_file() {
 		return 1
 	fi
 }
-
 #!/usr/bin/env bash
 # Shared platform detection.
 detect_target() {
@@ -79,7 +76,6 @@ detect_target() {
 	esac
 	TARGET="$arch-$os"
 }
-
 #!/usr/bin/env bash
 http_get() {
 	if have curl; then
@@ -100,7 +96,6 @@ http_fetch() { # url dest
 		die "curl or wget is required"
 	fi
 }
-
 #!/usr/bin/env bash
 parse_index() { # $1 = index.json contents
 	local out
@@ -229,7 +224,6 @@ drop_state() { # tool — forget one row, keeping the three arrays aligned
 	S_SHA=("${ns[@]+"${ns[@]}"}")
 	save_state
 }
-
 #!/usr/bin/env bash
 is_installed() { [ -x "$BIN_DIR/$1" ]; }
 
@@ -283,7 +277,6 @@ installed_version() { # tool
 }
 
 # ------------------------------------------------------------ install/update
-
 #!/usr/bin/env bash
 install_tool() { # tool — non-zero when the tool could not be installed
 	local tool="$1"
@@ -367,7 +360,6 @@ needs_update() { # tool
 	fi
 	return 0 # cannot tell apart → refresh
 }
-
 #!/usr/bin/env bash
 path_note() {
 	case ":$PATH:" in
@@ -541,7 +533,6 @@ selector() {
 # ---------------------------------------------------------------- commands
 
 # Turn the positional arguments into TARGETS (shared by install/uninstall).
-
 #!/usr/bin/env bash
 resolve_names() {
 	TARGETS=()
@@ -707,7 +698,6 @@ cmd_uninstall() {
 }
 
 # -------------------------------------------------------------------- main
-
 #!/usr/bin/env bash
 #
 # android-tools — global installer with an interactive tool selector and a
