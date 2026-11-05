@@ -1,17 +1,76 @@
 # uitool
 
-Skill for agents: when and how to use the `uitool` tool.
+Practical Android UI driver — dump, find, tap, shot over `adb`.
 
 ## When to use
 
-- (fill in)
+- Reach for `uitool` when its dedicated purpose matches the task (see description above).
+- Prefer it over hand-rolled adb/shell commands for the features it wraps.
 
 ## Common commands
 
 ```bash
-uitool --help
+uitool wake                                  # wake + dismiss keyguard + collapse status bar
+uitool dump                                  # text [bounds] * per labeled node
+uitool find "Settings"                       # matching nodes (bounds + center), exit 1 if none
+uitool find "Settings" --clickable           # clickable matches only
+uitool wait "Aperçu" -t 20                  # poll until the node appears
+uitool tap 978 2316                          # tap by coordinates
+uitool tap "Aperçu"                          # tap by label (center of the node)
+uitool long-press "App icon"
+uitool swipe 540 2000 540 800 300            # x1 y1 x2 y2 [ms]
+uitool shot -o /tmp/screen.png               # screenshot (prints the path)
+uitool shot --crop 0,100,1080,400 --scale 2  # crop then nearest upscale
+uitool shot --wake --quality 90
+uitool pick 540 1200                          # color under the point: #FF3A3A3A
+uitool launch com.example.myapp              # resolves the launcher activity
+uitool launch com.example.myapp/.MainActivity
+uitool key HOME                              # or numeric: uitool key 3
+uitool input "hello world"                   # spaces → %s for adb
+uitool stop com.example.myapp                # force-stop
 ```
+
+Global flag `-s, --serial <SERIAL>` selects a device; with exactly one device
+connected it is picked automatically.
+
+### Subcommands
+
+| Command | Arguments | Description |
+|---------|-----------|-------------|
+| `wake` | — | Wake + dismiss keyguard + collapse status bar |
+| `dump` | — | One line per labeled node: `text [x1,y1,x2,y2]` (`*` = clickable) |
+| `find` | `<query> [--clickable]` | Case-insensitive substring on text/content-desc. Prints `[bounds] cx= cy= clickable=`; **exit 1 if no match** |
+| `wait` | `<query> [-t/--timeout <secs>]` | Poll the dump until a match (default 10 s), print its bounds |
+| `tap` | `<x> <y>` or `<label>` `[-d/--duration <ms>]` | Tap by coordinates, or by label (center of best match). `0` (default) = quick tap, `>0` holds the press |
+| `long-press` | `<query> [-d/--duration <ms>]` | Long-press a label (default 600 ms) |
+| `swipe` | `<x1> <y1> <x2> <y2> [ms]` | Swipe (default 300 ms) |
+| `shot` | `[-o PATH] [--crop x1,y1,x2,y2] [--scale N] [--max-dim N] [--quality 1-100] [--wake]` | Screenshot → jpg/png/webp, prints the output path |
+| `pick` | `<x> <y>` | Color under a point as `#AARRGGBB` (fresh screencap; error outside the screen) |
+| `launch` | `<pkg>` or `<pkg/.Activity>` | Start an activity; a bare package resolves its launcher activity (`cmd package resolve-activity`) |
+| `key` | `<CODE>` | `KEYCODE_HOME` or numeric code |
+| `input` | `<text>` | Type text |
+| `stop` | `<pkg>` | Force-stop a package |
+
+### Screenshot notes
+
+- Default output: `/tmp/uitool-<epoch>.jpg`; extension picks the encoder
+  (`.jpg` with `--quality`, `.png`, `.webp`).
+- `--crop` is in screenshot pixels and clamped to the screen; an empty crop is
+  an error.
+- `--scale` uses nearest-neighbour (good for inspecting icons/density),
+  `--max-dim` caps the longest side with a smooth resize.
+- `pick` takes its own screencap (like `shot`) and prints the pixel as
+  `#AARRGGBB` — opaque `FF` alpha, since a screencap never carries
+  transparency. Coordinates outside the screen are an error, never a
+  clamped neighbour pixel.
+
+### Selection notes
+
+`find`/`wait`/`tap <label>` match on `text`, falling back to `content-desc`,
+case-insensitively. Tap targets prefer a **clickable** match, otherwise the
+first match; the tap lands on the node's bounds center.
 
 ## Notes
 
-- (fill in)
+- Run `uitool --help` for the full option list.
+- Device-touching commands need `adb` on PATH and an authorized device unless noted.
