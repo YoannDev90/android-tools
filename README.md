@@ -6,8 +6,7 @@ adb-based tools for Android development, written in Rust.
 
 ```bash
 # Linux / macOS — pick the tools in a selector, installs to ~/.local/bin:
-curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh | bash
+curl -LsSf https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh | bash
 ```
 
 ```powershell
