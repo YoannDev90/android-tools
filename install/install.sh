@@ -134,17 +134,8 @@ http_fetch() { # url dest
 	fi
 }
 
-sha256_file() {
-	if have sha256sum; then
-		sha256sum "$1" | awk '{print $1}'
-	elif have shasum; then
-		shasum -a 256 "$1" | awk '{print $1}'
-	elif have openssl; then
-		openssl dgst -sha256 "$1" | awk '{print $NF}'
-	else
-		return 1
-	fi
-}
+# shellcheck source=utils/hash.sh
+. "$(dirname "$0")/utils/hash.sh"
 
 # --------------------------------------------------------------- platform
 
