@@ -333,6 +333,24 @@ install_tool() { # tool — non-zero when the tool could not be installed
 	if ! "$BIN_DIR/$tool" --version >/dev/null 2>&1; then
 		warn "$tool is installed but '$tool --version' failed to run"
 	fi
+
+	# Best-effort: install the agent skill for this tool if available.
+	local skill_url="https://raw.githubusercontent.com/$REPO/main/skills/$tool.md"
+	local skill_tmp="$TMP_ROOT/$tool.skill.md"
+	if http_fetch "$skill_url" "$skill_tmp" 2>/dev/null; then
+		local agents_home="${AGENTS_HOME:-$HOME/.agents}"
+		local canonical="$agents_home/skills/$tool"
+		mkdir -p "$canonical"
+		cp "$skill_tmp" "$canonical/SKILL.md" 2>/dev/null || true
+		for agent in claude cursor codex gemini; do
+			local agent_dir="$HOME/.$agent"
+			[ -d "$agent_dir" ] || continue
+			mkdir -p "$agent_dir/skills"
+			local link="$agent_dir/skills/$tool"
+			[ -e "$link" ] && rm -rf "$link"
+			ln -s "$canonical" "$link" 2>/dev/null || true
+		done
+	fi
 }
 
 needs_update() { # tool
