@@ -2,6 +2,10 @@
 
 Guidance for AI coding agents working in the `android-tools` repository.
 
+## Skills
+
+Per-tool agent skills live in `skills/` (one file per crate). Read the relevant one before invoking a tool.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for build commands and code-generation workflow. Follow it.
