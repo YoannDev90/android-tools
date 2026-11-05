@@ -39,72 +39,22 @@ The same scripts are the updater for what they installed: append
 
 ## Requirements
 
-
 - **Rust**: stable (verified with rustc 1.99)
 - **adb**: Android SDK platform-tools in PATH
 - **Device**: Connected Android device or emulator with USB debugging authorized
 
-
 ## Install
 
-**The whole toolkit at once** — `scripts/install.sh` (Linux / macOS) and
-`scripts/install.ps1` (Windows) show the catalog, let you pick the tools to
-install, verify the SHA-256 of every archive, and double as an updater for
-what is already installed:
+See the per-OS guides:
 
-```bash
-# Linux / macOS — interactive selector, installs to ~/.local/bin:
-curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh | bash
-
-# … then refresh / inspect / remove, any time:
-curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh \
-  | bash -s -- update
-```
-
-```powershell
-# Windows — interactive selector, installs to %LOCALAPPDATA%\android-tools\bin
-# (added to your user PATH):
-irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1 | iex
-
-# with arguments, wrap the download in a scriptblock:
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1))) update
-```
-
-Both take `install [tool…]`, `update`, `list`, `uninstall`, `--all` / `-All`
-and `--bin-dir` / `-BinDir`; run either with `help` / `-Help`.
-
-**One tool at a time** — binaries for Linux (musl, any distro), Windows and
-macOS are attached to each
-[release](https://github.com/YoannDev90/android-tools/releases):
-
-```bash
-# Linux / macOS — detects OS and arch, installs to ~/.local/bin:
-curl --proto '=https' --tlsv1.2 -LsSf \
-  https://github.com/YoannDev90/android-tools/releases/latest/download/apkctl-installer.sh | sh
-
-# Windows (PowerShell):
-irm https://github.com/YoannDev90/android-tools/releases/latest/download/apkctl-installer.ps1 | iex
-
-# macOS / Linuxbrew:
-brew install YoannDev90/homebrew-tap/apkctl
-
-# Debian / Ubuntu (.deb) and Fedora / RHEL (.rpm) attached to the release:
-sudo apt install ./apkctl_*_amd64.deb
-
-# From crates.io (needs Rust):
-cargo install apkctl
-
-# Windows package manager:
-winget install YoannDev90.apkctl
-```
+- [Linux](docs/install-linux.md)
+- [macOS](docs/install-macos.md)
+- [Windows](docs/install-windows.md)
 
 Replace `apkctl` with any tool from the table above. See
 [`RELEASING.md`](RELEASING.md) for the full release and packaging chain.
 
 ## Build
-
 
 ```bash
 cargo build --release
@@ -112,7 +62,6 @@ cargo test --workspace
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 ```
-
 
 ## Code generation
 
@@ -133,114 +82,6 @@ generated files are out of date with their sources. Only
 `generate_stats.py` reaches the network, so it runs on its own schedule
 (`.github/workflows/stats.yml`) instead of in CI.
 
-## Repository layout
-
-<!-- BEGIN:layout -->
-```
-.
-├── Cargo.toml
-├── Cargo.lock
-├── index.json
-├── stats.json
-├── README.md
-├── LICENSE
-├── rustfmt.toml
-├── .github/
-│   ├── dependabot.yml
-│   └── workflows
-├── packaging/
-│   └── arch
-├── scripts/
-│   ├── generate_index.py
-│   ├── generate_readme.py
-│   ├── generate_stats.py
-│   ├── install.ps1
-│   ├── install.sh
-│   ├── make_nfpm.py
-│   └── make_pkgbuild.py
-└── src/
-    ├── adbkit
-    │   ├── .METADATA.toml
-    │   ├── Cargo.toml
-    │   ├── LICENSE
-    │   ├── README.md
-    │   ├── src
-    │   └── tests
-    ├── apkctl
-    │   ├── .METADATA.toml
-    │   ├── Cargo.toml
-    │   ├── LICENSE
-    │   ├── README.md
-    │   └── src
-    ├── assetgen
-    │   ├── .METADATA.toml
-    │   ├── Cargo.toml
-    │   ├── LICENSE
-    │   ├── README.md
-    │   └── src
-    ├── dp2px
-    │   ├── .METADATA.toml
-    │   ├── Cargo.toml
-    │   ├── LICENSE
-    │   ├── README.md
-    │   └── src
-    ├── iconkit
-    │   ├── .METADATA.toml
-    │   ├── Cargo.toml
-    │   ├── LICENSE
-    │   ├── README.md
-    │   └── src
-    ├── layoutlint
-    │   ├── .METADATA.toml
-    │   ├── Cargo.toml
-    │   ├── LICENSE
-    │   ├── README.md
-    │   └── src
-    ├── logstream
-    │   ├── .METADATA.toml
-    │   ├── Cargo.toml
-    │   ├── LICENSE
-    │   ├── README.md
-    │   └── src
-    ├── perfpoll
-    │   ├── .METADATA.toml
-    │   ├── Cargo.toml
-    │   ├── LICENSE
-    │   ├── README.md
-    │   └── src
-    ├── resclean
-    │   ├── .METADATA.toml
-    │   ├── Cargo.toml
-    │   ├── LICENSE
-    │   ├── README.md
-    │   ├── src
-    │   └── tests
-    ├── scenediff
-    │   ├── .METADATA.toml
-    │   ├── Cargo.toml
-    │   ├── LICENSE
-    │   ├── README.md
-    │   └── src
-    ├── startperf
-    │   ├── .METADATA.toml
-    │   ├── Cargo.toml
-    │   ├── LICENSE
-    │   ├── README.md
-    │   └── src
-    ├── svg2vd
-    │   ├── .METADATA.toml
-    │   ├── Cargo.toml
-    │   ├── LICENSE
-    │   ├── README.md
-    │   └── src
-    └── uitool
-        ├── .METADATA.toml
-        ├── Cargo.toml
-        ├── LICENSE
-        ├── README.md
-        └── src
-```
-<!-- END:layout -->
 
 ## License
 
