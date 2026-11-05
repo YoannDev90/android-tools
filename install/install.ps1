@@ -1,3 +1,170 @@
+# Shared helpers for the android-tools installers.
+function Log($msg) { Write-Host $msg }
+function Err($msg) { Write-Error $msg }
+
+function Write-Ok([string]$Message) { Write-Host " ok $Message" -ForegroundColor Green }
+function Write-Warn([string]$Message) { Write-Host "warning: $Message" -ForegroundColor Yellow }
+
+function Stop-Install([string]$Message) {
+    Write-Host "error: $Message" -ForegroundColor Red
+    $script:Failed = $true
+}
+
+
+function Show-Help {
+    Write-Host @'
+android-tools installer — pick the tools you want, keep them updated.
+
+Usage: install.ps1 [command] [options] [tool...]
+
+Commands:
+  install [tool... | all]    install tools (interactive selector by default)
+  update  [tool... | all]    update the tools already installed
+  list                       show installed / available tools
+  uninstall [tool... | all]  remove tools
+  help                       print this help
+
+Options:
+  -All             every tool, no selector
+  -BinDir DIR      install directory (default: %LOCALAPPDATA%\android-tools\bin)
+  -NoPath          do not touch your user PATH
+  -Help            print this help
+
+Examples:
+  install.ps1                          # selector
+  install.ps1 install all              # everything, no prompt
+  install.ps1 install apkctl svg2vd    # a subset
+  install.ps1 update                   # updater for what is installed
+  install.ps1 list
+  install.ps1 uninstall apkctl
+
+From a one-liner, pass arguments with a scriptblock:
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/install/install.ps1))) update
+'@
+}
+
+# ---------------------------------------------------------------- platform
+
+# Shared SHA-256 helper.
+function Get-Sha256File($path) {
+    return (Get-FileHash -Path $path -Algorithm SHA256).Hash.ToLower()
+}
+
+function Test-Windows {
+    if ($PSVersionTable.PSVersion.Major -ge 6) {
+        return ($PSVersionTable.Platform -eq 'Win3NT')
+    }
+    return ($env:OS -eq 'Windows_NT')
+}
+
+function Initialize-Platform {
+    if (-not (Test-Windows)) {
+        Stop-Install 'run install/install.sh on Linux/macOS'
+        return
+    }
+
+    # GitHub requires TLS 1.2 on Windows PowerShell 5.1
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    } catch { }
+
+    $arch = $env:PROCESSOR_ARCHITECTURE
+    if (-not $arch) {
+        try {
+            $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
+        } catch { $arch = '' }
+    }
+    switch -Regex ($arch.ToUpperInvariant()) {
+        '^(X64|AMD64)$' { $script:Target = 'x86_64-pc-windows-msvc'; break }
+        '^ARM64$' {
+            # No Windows ARM64 build is published; x86_64 runs under emulation.
+            $script:Target = 'x86_64-pc-windows-msvc'
+            Write-Warn 'ARM64 host: installing the x86_64 build (runs under emulation)'
+            break
+        }
+        default { Stop-Install "unsupported architecture: $arch"; break }
+    }
+
+    if (-not $BinDir) {
+        if ($env:ANDROID_TOOLS_BIN) { $BinDir = $env:ANDROID_TOOLS_BIN }
+        elseif ($env:LOCALAPPDATA) { $BinDir = Join-Path $env:LOCALAPPDATA 'android-tools\bin' }
+        else { $BinDir = Join-Path $HOME '.local\bin' }
+    }
+    $script:BinDir = $BinDir.TrimEnd('\')
+
+    if ($env:ANDROID_TOOLS_STATE) { $stateDir = $env:ANDROID_TOOLS_STATE }
+    elseif ($env:LOCALAPPDATA) { $stateDir = Join-Path $env:LOCALAPPDATA 'android-tools' }
+    else { $stateDir = Join-Path $HOME '.android-tools' }
+    $script:StateFile = Join-Path $stateDir 'installed.tsv'
+}
+
+# ---------------------------------------------------------------- network
+
+function Get-VersionFromRedirect {
+    $savedPreference = $ProgressPreference
+    $ProgressPreference = 'SilentlyContinue'
+    try {
+        $resp = Invoke-WebRequest -Uri "https://github.com/$Repo/releases/latest" -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
+        $final = $null
+        if ($resp.BaseResponse -and $resp.BaseResponse.PSObject.Properties['ResponseUri']) {
+            $final = [string]$resp.BaseResponse.ResponseUri
+        } elseif ($resp.BaseResponse -and $resp.BaseResponse.PSObject.Properties['RequestMessage']) {
+            $final = [string]$resp.BaseResponse.RequestMessage.RequestUri
+        }
+        if ($final -and $final -match '/tag/v([0-9][0-9.]*)$') { return $Matches[1] }
+    } catch { }
+    finally { $ProgressPreference = $savedPreference }
+    return ''
+}
+
+# ----------------------------------------------------------------- catalog
+
+function Get-Text([string]$Url) {
+    $script:LastError = ''
+    $savedPreference = $ProgressPreference
+    $ProgressPreference = 'SilentlyContinue' # no progress bar for one-liners
+    try {
+        for ($attempt = 1; $attempt -le 3; $attempt++) {
+            try {
+                $content = (Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop).Content
+                # Assets served as application/octet-stream come back as bytes.
+                if ($content -is [byte[]]) { return [System.Text.Encoding]::UTF8.GetString($content) }
+                return [string]$content
+            } catch {
+                $script:LastError = $_.Exception.Message
+                Start-Sleep -Milliseconds 400
+            }
+        }
+        return $null
+    } finally {
+        $ProgressPreference = $savedPreference
+    }
+}
+
+function Invoke-Download([string]$Url, [string]$OutFile) {
+    $script:LastError = ''
+    $savedPreference = $ProgressPreference
+    $ProgressPreference = 'SilentlyContinue'
+    try {
+        for ($attempt = 1; $attempt -le 3; $attempt++) {
+            try {
+                Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing -TimeoutSec 180 -ErrorAction Stop | Out-Null
+                if ((Test-Path $OutFile) -and ((Get-Item $OutFile).Length -gt 0)) { return $true }
+                $script:LastError = "empty download: $Url"
+            } catch {
+                $script:LastError = $_.Exception.Message
+                Start-Sleep -Milliseconds 400
+            }
+        }
+        return $false
+    } finally {
+        $ProgressPreference = $savedPreference
+    }
+}
+
+# Last-resort version: /releases/latest redirects straight at the tag, needs no
+# API quota and no JSON parser.
+
 #Requires -Version 5.1
 <#
 .SYNOPSIS
@@ -40,12 +207,7 @@
 #>
 param(
     [Parameter(Position = 0)
-. "$PSScriptRoot\utils\logging.ps1"
-. "$PSScriptRoot\utils\http.ps1"
-. "$PSScriptRoot\utils\platform.ps1"
-. "$PSScriptRoot\utils\hash.ps1"
 
-. "$PSScriptRoot\utils\hash.ps1"
 ]
     [string]$Command = 'install',
 
