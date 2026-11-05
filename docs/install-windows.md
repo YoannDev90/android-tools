@@ -3,13 +3,13 @@
 ## Whole toolkit (selector)
 
 ```powershell
-irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/install/install.ps1 | iex
 ```
 
 With arguments, wrap the download in a scriptblock:
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1))) update
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/install/install.ps1))) update
 ```
 
 Installs to `%LOCALAPPDATA%\android-tools\bin` (added to your user PATH).

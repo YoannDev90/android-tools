@@ -30,7 +30,7 @@
   Print this help.
 
 .EXAMPLE
-  irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1 | iex
+  irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/install/install.ps1 | iex
 
 .EXAMPLE
   .\install.ps1 install apkctl svg2vd
@@ -110,7 +110,7 @@ Examples:
   install.ps1 uninstall apkctl
 
 From a one-liner, pass arguments with a scriptblock:
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1))) update
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/install/install.ps1))) update
 '@
 }
 
@@ -125,7 +125,7 @@ function Test-Windows {
 
 function Initialize-Platform {
     if (-not (Test-Windows)) {
-        Stop-Install 'run scripts/install.sh on Linux/macOS'
+        Stop-Install 'run install/install.sh on Linux/macOS'
         return
     }
 

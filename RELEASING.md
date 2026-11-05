@@ -88,10 +88,10 @@ the built-in token with `contents: write`).
 ```bash
 # every tool, picked in a selector (Linux / macOS; update/list/uninstall built in):
 curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh | bash
+  https://raw.githubusercontent.com/YoannDev90/android-tools/main/install/install.sh | bash
 
 # every tool on Windows:
-irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/install/install.ps1 | iex
 
 # any OS, one tool at a time, from the GitHub Release (arch-aware):
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/YoannDev90/android-tools/releases/latest/download/apkctl-installer.sh | sh

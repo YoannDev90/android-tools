@@ -6,12 +6,12 @@ adb-based tools for Android development, written in Rust.
 
 ```bash
 # Linux / macOS — pick the tools in a selector, installs to ~/.local/bin:
-curl -LsSf https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh | bash
+curl -LsSf https://raw.githubusercontent.com/YoannDev90/android-tools/main/install/install.sh | bash
 ```
 
 ```powershell
 # Windows — same selector, installs to %LOCALAPPDATA%\android-tools\bin:
-irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/YoannDev90/android-tools/main/install/install.ps1 | iex
 ```
 
 The same scripts are the updater for what they installed: append

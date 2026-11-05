@@ -4,7 +4,7 @@
 # built-in updater.
 #
 #   curl --proto '=https' --tlsv1.2 -LsSf \
-#     https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh | bash
+#     https://raw.githubusercontent.com/YoannDev90/android-tools/main/install/install.sh | bash
 #
 # Commands (the first argument; "install" is the default):
 #   install [tool... | all]   select the tools to install (interactive)
@@ -154,7 +154,7 @@ detect_target() {
 	Linux) os="unknown-linux-musl" ;;
 	Darwin) os="apple-darwin" ;;
 	CYGWIN* | MSYS* | MINGW*)
-		die "run scripts/install.ps1 on Windows"
+		die "run install/install.ps1 on Windows"
 		;;
 	*) die "unsupported operating system: $(uname -s)" ;;
 	esac

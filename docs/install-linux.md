@@ -4,14 +4,14 @@
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh | bash
+  https://raw.githubusercontent.com/YoannDev90/android-tools/main/install/install.sh | bash
 ```
 
 Updater / list / uninstall:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -LsSf \
-  https://raw.githubusercontent.com/YoannDev90/android-tools/main/scripts/install.sh \
+  https://raw.githubusercontent.com/YoannDev90/android-tools/main/install/install.sh \
   | bash -s -- update
 ```
 
