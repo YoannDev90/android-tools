@@ -1,10 +1,10 @@
 {
-  "total": 340,
+  "total": 352,
   "tools": {
     "adbkit": {
       "github": 0,
-      "crates_io": 41,
-      "total": 41
+      "crates_io": 49,
+      "total": 49
     },
     "apkctl": {
       "github": 25,
@@ -17,14 +17,14 @@
       "total": 22
     },
     "dp2px": {
-      "github": 16,
+      "github": 18,
       "crates_io": 10,
-      "total": 26
+      "total": 28
     },
     "iconkit": {
-      "github": 12,
+      "github": 13,
       "crates_io": 10,
-      "total": 22
+      "total": 23
     },
     "layoutlint": {
       "github": 17,
@@ -58,8 +58,8 @@
     },
     "svg2vd": {
       "github": 15,
-      "crates_io": 15,
-      "total": 30
+      "crates_io": 16,
+      "total": 31
     },
     "uitool": {
       "github": 10,
@@ -67,5 +67,5 @@
       "total": 20
     }
   },
-  "updated": "2026-11-04"
+  "updated": "2026-11-05"
 }
