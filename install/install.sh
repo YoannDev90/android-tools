@@ -80,7 +80,8 @@ die() {
 	printf '%serror:%s %s\n' "$C_RED" "$C_OFF" "$*" >&2
 	exit 1
 }
-have() { command -v "$1" >/dev/null 2>&1; }
+# shellcheck source=utils/common.sh
+. "$(dirname "$0")/utils/common.sh"
 
 usage() {
 	cat <<EOF
@@ -134,6 +135,8 @@ http_fetch() { # url dest
 	fi
 }
 
+# shellcheck source=utils/common.sh
+# (common already sourced above)
 # shellcheck source=utils/hash.sh
 . "$(dirname "$0")/utils/hash.sh"
 
