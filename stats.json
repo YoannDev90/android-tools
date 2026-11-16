@@ -1,10 +1,10 @@
 {
-  "total": 454,
+  "total": 455,
   "tools": {
     "adbkit": {
       "github": 0,
-      "crates_io": 70,
-      "total": 70
+      "crates_io": 71,
+      "total": 71
     },
     "apkctl": {
       "github": 30,
@@ -67,5 +67,5 @@
       "total": 29
     }
   },
-  "updated": "2026-11-15"
+  "updated": "2026-11-16"
 }
