@@ -1,5 +1,5 @@
 {
-  "total": 468,
+  "total": 469,
   "tools": {
     "adbkit": {
       "github": 0,
@@ -48,8 +48,8 @@
     },
     "scenediff": {
       "github": 16,
-      "crates_io": 12,
-      "total": 28
+      "crates_io": 13,
+      "total": 29
     },
     "startperf": {
       "github": 22,
@@ -67,5 +67,5 @@
       "total": 29
     }
   },
-  "updated": "2026-11-19"
+  "updated": "2026-11-20"
 }
