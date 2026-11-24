@@ -1,15 +1,15 @@
 {
-  "total": 476,
+  "total": 479,
   "tools": {
     "adbkit": {
       "github": 0,
-      "crates_io": 88,
-      "total": 88
+      "crates_io": 89,
+      "total": 89
     },
     "apkctl": {
-      "github": 30,
+      "github": 32,
       "crates_io": 11,
-      "total": 41
+      "total": 43
     },
     "assetgen": {
       "github": 17,
